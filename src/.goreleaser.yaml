@@ -80,13 +80,66 @@ release:
   prerelease: auto
   target_commitish: "{{ .Commit }}"
   name_template: "Cloudreve-New {{.Version}}"
-  footer: |
-    ## 说明
+  header: |
+    ## 下载
 
-    - 本项目是基于 Cloudreve v4 社区版源码的非官方分支，遵循 GPL-3.0。
-    - 不包含任何 Pro 版本的二进制、前端产物或授权逻辑。
-    - 下载的压缩包内为单一静态二进制 `cloudreve`，无需额外依赖。
-    - 对应源码：[{{ .Tag }}](https://github.com/Dark-CC/Cloudreve-New/tree/{{ .Tag }})
+    按平台选择压缩包，解压后即为单一静态二进制 `cloudreve`（Windows 为 `cloudreve.exe`），
+    无需安装 Go、Node.js 或其他运行时依赖。
+
+    | 平台 | 架构 | 文件 |
+    | --- | --- | --- |
+    | Linux | x86-64 | `cloudreve_{{ .Version }}_linux_amd64.tar.gz` |
+    | Linux | ARM64 | `cloudreve_{{ .Version }}_linux_arm64.tar.gz` |
+    | Linux | ARMv7 / ARMv6 / ARMv5 | `cloudreve_{{ .Version }}_linux_armv7.tar.gz` 等 |
+    | Linux | LoongArch64 | `cloudreve_{{ .Version }}_linux_loong64.tar.gz` |
+    | Windows | x86-64 | `cloudreve_{{ .Version }}_windows_amd64.zip` |
+    | Windows | ARM64 | `cloudreve_{{ .Version }}_windows_arm64.zip` |
+    | macOS | Apple Silicon | `cloudreve_{{ .Version }}_darwin_arm64.tar.gz` |
+    | macOS | Intel | `cloudreve_{{ .Version }}_darwin_amd64.tar.gz` |
+    | FreeBSD | x86-64 / ARM64 | `cloudreve_{{ .Version }}_freebsd_amd64.tar.gz` 等 |
+
+    每个压缩包内含 `cloudreve`、`LICENSE` 与 `NOTICE`。
+
+    ## 校验
+
+    ```bash
+    sha256sum -c checksums.txt --ignore-missing
+    ```
+
+    ## 运行
+
+    ```bash
+    tar -xzf cloudreve_{{ .Version }}_linux_amd64.tar.gz
+    chmod +x cloudreve
+    ./cloudreve -c data/conf.ini server
+    ```
+
+    默认监听 `:5212`，首次启动会创建 `data/` 目录与 SQLite 数据库，并在控制台输出管理员账号。
+
+    ## 容器镜像
+
+    ```bash
+    docker run -d --name cloudreve \
+      -p 5212:5212 -p 6888:6888 -p 6888:6888/udp \
+      -v $(pwd)/data:/cloudreve/data \
+      ghcr.io/dark-cc/cloudreve-new:{{ .Version }}
+    ```
+
+    多架构镜像（`linux/amd64`、`linux/arm64`）由独立的 Docker 工作流构建，
+    通常在 Release 发布后数十分钟内可用。
+
+    ## 文档
+
+    - 构建说明：[docs/BUILD.md](https://github.com/Dark-CC/Cloudreve-New/blob/{{ .Tag }}/docs/BUILD.md)
+    - 部署说明：[docs/DEPLOY.md](https://github.com/Dark-CC/Cloudreve-New/blob/{{ .Tag }}/docs/DEPLOY.md)
+    - 功能清单：[docs/FEATURES.md](https://github.com/Dark-CC/Cloudreve-New/blob/{{ .Tag }}/docs/FEATURES.md)
+
+  footer: |
+    ## 关于本项目
+
+    - 基于 Cloudreve v4 社区版源码的非官方增强分支，与 Cloudreve 官方无任何关联。
+    - 不包含、不分发、不反编译任何 Pro 版本的二进制、前端产物或授权逻辑。
+    - 遵循 GPL-3.0，对应源码：[{{ .Tag }}](https://github.com/Dark-CC/Cloudreve-New/tree/{{ .Tag }})
 
 # Docker images are built by .github/workflows/docker.yml so a release does not
 # fail when the registry is unavailable.

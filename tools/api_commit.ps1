@@ -10,6 +10,9 @@
 .PARAMETER Files
     Repository-relative paths to commit. Working tree contents are used.
 
+.PARAMETER Deleted
+    Repository-relative paths to remove in the same commit.
+
 .PARAMETER Message
     Commit message.
 
@@ -18,7 +21,8 @@
     .\tools\api_commit.ps1 -Files Dockerfile,src/.goreleaser.yaml -Message "fix: x"
 #>
 param(
-    [Parameter(Mandatory = $true)][string[]]$Files,
+    [string[]]$Files = @(),
+    [string[]]$Deleted = @(),
     [Parameter(Mandatory = $true)][string]$Message,
     [string]$Token = $env:GITHUB_TOKEN,
     [string]$Repository = "Dark-CC/Cloudreve-New",
@@ -28,6 +32,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 if (-not $Token) { throw "No token. Set `$env:GITHUB_TOKEN or pass -Token." }
+if ($Files.Count -eq 0 -and $Deleted.Count -eq 0) { throw "Nothing to commit." }
 
 $headers = @{
     Authorization = "token $Token"
@@ -56,6 +61,12 @@ foreach ($file in $Files) {
     $mode = if ($file -like "*.sh") { "100755" } else { "100644" }
     $entries += @{ path = $file; mode = $mode; type = "blob"; sha = $blob.sha }
     Write-Host "  blob $file ($mode)"
+}
+
+foreach ($file in $Deleted) {
+    # A null sha removes the path from the new tree.
+    $entries += @{ path = $file; mode = "100644"; type = "blob"; sha = $null }
+    Write-Host "  delete $file"
 }
 
 $tree = (Invoke-RestMethod -Uri "$api/git/trees" -Headers $headers -Method Post `
