@@ -1,50 +1,76 @@
 version: 2
 
+# Keep updates reviewable: minor/patch bumps arrive as one grouped PR per
+# ecosystem, majors are left to a human. Cloudreve pins several libraries to
+# the versions its Pro/community API surface was built against, so blind major
+# upgrades break the build instead of helping.
 updates:
-  # npm, yarn and pnpm all share the "npm" ecosystem; the package-ecosystem
-  # value below is not a package manager selector. pnpm is selected by the
+  # npm, yarn and pnpm all share the "npm" ecosystem; pnpm is selected by the
   # committed pnpm-lock.yaml plus the packageManager field in web/package.json.
   - package-ecosystem: "npm"
     directory: "/web"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 3
     groups:
-      frontend-minor-patch:
+      frontend:
         patterns:
           - "*"
         update-types:
           - "minor"
           - "patch"
     ignore:
-      # React major upgrades require a coordinated migration.
-      - dependency-name: "react"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "react-dom"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "react-router-dom"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "i18next"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "react-i18next"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "i18next-http-backend"
-        update-types: ["version-update:semver-major"]
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
 
   - package-ecosystem: "gomod"
     directory: "/src"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 3
+    groups:
+      backend:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
 
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 3
+    groups:
+      actions:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
 
   - package-ecosystem: "docker"
     directory: "/"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 3
+    groups:
+      docker-images:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
