@@ -6,7 +6,7 @@ toolchain go1.26.5
 
 require (
 	entgo.io/ent v0.13.0
-	github.com/Masterminds/semver/v3 v3.3.1
+	github.com/Masterminds/semver/v3 v3.5.0
 	github.com/aliyun/alibabacloud-oss-go-sdk-v2 v1.3.0
 	github.com/aws/aws-sdk-go v1.34.0
 	github.com/bodgit/sevenzip v1.6.0
