@@ -87,3 +87,18 @@ goreleaser build --snapshot --clean
 
 Docker 镜像由 `.github/workflows/docker.yml` 独立构建，推送到
 `ghcr.io/dark-cc/cloudreve-new`，不影响 Release 是否成功。
+
+## 本地一键出包
+
+Windows 环境可直接使用 `tools/build-release.ps1`，流程与 CI 一致：
+
+```powershell
+# 完整 12 平台矩阵，产物在 src\dist
+.\tools\build-release.ps1
+
+# 只出当前平台，产物为 .\Cloudreve-New.exe
+.\tools\build-release.ps1 -Fast
+```
+
+脚本会自动定位 `pnpm`、`go`、`goreleaser`（优先使用仓库内的 `tools/go`、`.tmp/bin`），
+并把 `GOPATH` / `GOCACHE` 指向仓库内目录，避免污染系统缓存。
