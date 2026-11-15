@@ -2,7 +2,7 @@
 
 [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue.svg)](LICENSE)
 [![Release](https://img.shields.io/github/v/release/Dark-CC/Cloudreve-New?include_prereleases&sort=semver)](https://github.com/Dark-CC/Cloudreve-New/releases)
-[![Build](https://github.com/Dark-CC/Cloudreve-New/actions/workflows/build.yml/badge.svg)](https://github.com/Dark-CC/Cloudreve-New/actions/workflows/build.yml)
+[![Release](https://github.com/Dark-CC/Cloudreve-New/actions/workflows/release.yml/badge.svg)](https://github.com/Dark-CC/Cloudreve-New/actions/workflows/release.yml)
 [![Docker](https://img.shields.io/badge/ghcr.io-cloudreve--new-2496ed?logo=docker&logoColor=white)](https://github.com/Dark-CC/Cloudreve-New/pkgs/container/cloudreve-new)
 
 [English](#english) · [中文](#中文)
