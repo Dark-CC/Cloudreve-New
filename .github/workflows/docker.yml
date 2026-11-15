@@ -9,6 +9,10 @@ on:
       tag:
         description: "Existing tag to build (defaults to the selected ref)"
         required: false
+      ref:
+        description: "Git ref holding the source to build (defaults to the tag)"
+        required: false
+        default: "master"
 
 permissions:
   contents: read
@@ -25,7 +29,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.tag || github.ref }}
+          # `tag` selects the version, `ref` selects the source tree. Splitting
+          # them lets a workflow fix on master rebuild an existing tag without
+          # moving the tag itself.
+          ref: ${{ inputs.ref || inputs.tag || github.ref }}
 
       - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
