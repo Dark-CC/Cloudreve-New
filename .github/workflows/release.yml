@@ -1,0 +1,73 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to build"
+        required: true
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  goreleaser:
+    name: Build & publish release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.tag || github.ref }}
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26.x"
+          cache-dependency-path: src/go.sum
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+
+      - name: Install zip
+        run: sudo apt-get update && sudo apt-get install -y zip
+
+      - name: Build frontend & embed assets
+        working-directory: src
+        env:
+          npm_package_name: cloudreve-frontend
+        run: |
+          chmod +x ./.build/build-assets.sh
+          ./.build/build-assets.sh "${GITHUB_REF_NAME#v}"
+
+      - name: Verify embedded assets
+        working-directory: src
+        run: |
+          python3 - <<'PY'
+          import json, zipfile, sys
+          z = zipfile.ZipFile("application/statics/assets.zip")
+          names = z.namelist()
+          assert any(n == "assets/build/index.html" for n in names), "assets/build/index.html missing"
+          v = json.loads(z.read("assets/build/version.json"))
+          print("version.json:", v)
+          if v.get("name") != "cloudreve-frontend":
+              sys.exit("unexpected static resource name")
+          PY
+
+      - uses: goreleaser/goreleaser-action@v6
+        with:
+          version: "~> v2"
+          args: release --clean
+          workdir: src
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

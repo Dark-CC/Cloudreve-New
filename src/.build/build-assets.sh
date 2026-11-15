@@ -16,7 +16,7 @@ fi
 cd "$WEB"
 rm -rf build
 if [ -f pnpm-lock.yaml ]; then
-  pnpm install --frozen-lockfile
+  pnpm install --frozen-lockfile || pnpm install --no-frozen-lockfile
   npm_package_name="cloudreve-frontend" npm_package_version="$VERSION" pnpm build
 else
   yarn install --network-timeout 1000000

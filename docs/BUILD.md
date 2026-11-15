@@ -64,5 +64,26 @@ CGO_ENABLED=0 go build -trimpath \
 
 ## 关于 goreleaser
 
-`src/.goreleaser.yaml` 保留了上游的构建矩阵。若要在自己的仓库发布，把
-`image_templates`、`archives.name_template` 中的镜像/包名改成自己的命名空间即可。
+`src/.goreleaser.yaml` 负责多平台构建与 GitHub Release 发布，产物命名与官方一致：
+
+```text
+cloudreve_<version>_<os>_<arch>.tar.gz   # linux / darwin / freebsd
+cloudreve_<version>_windows_<arch>.zip
+checksums.txt
+```
+
+构建矩阵覆盖 `linux / windows / darwin / freebsd` 与
+`amd64 / arm64 / arm(v5,v6,v7) / loong64`，CGO 关闭，产物为静态二进制。
+
+在本地试运行（不发布）：
+
+```bash
+cd src
+goreleaser build --snapshot --clean
+```
+
+正式发布由 `.github/workflows/release.yml` 完成：推送形如 `v4.19.1` 的 tag 后，
+工作流会先构建前端并打包 `assets.zip`，再调用 goreleaser 生成 Release。
+
+Docker 镜像由 `.github/workflows/docker.yml` 独立构建，推送到
+`ghcr.io/dark-cc/cloudreve-new`，不影响 Release 是否成功。

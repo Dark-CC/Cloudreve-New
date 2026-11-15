@@ -59,6 +59,8 @@ tools/go/
 tools/go*/
 *.test
 *.out
+src/dist/
+dist/
 src/application/statics/assets.zip
 src/application/statics/assets.zip.*
 

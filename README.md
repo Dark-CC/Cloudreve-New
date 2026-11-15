@@ -26,6 +26,36 @@ Cloudreve-New 是基于 [Cloudreve](https://github.com/cloudreve/Cloudreve) v4 �
 
 ## 快速开始
 
+### 下载预编译版本
+
+前往 [Releases](https://github.com/Dark-CC/Cloudreve-New/releases) 下载对应平台的压缩包：
+
+```text
+cloudreve_<version>_linux_amd64.tar.gz
+cloudreve_<version>_linux_arm64.tar.gz
+cloudreve_<version>_windows_amd64.zip
+cloudreve_<version>_darwin_arm64.tar.gz
+checksums.txt
+```
+
+解压后直接运行，压缩包内为单个静态二进制 `cloudreve`（Windows 为 `cloudreve.exe`），
+无需额外运行时依赖：
+
+```bash
+tar -xzf cloudreve_4.19.1_linux_amd64.tar.gz
+chmod +x cloudreve
+./cloudreve -c data/conf.ini server
+```
+
+### Docker
+
+```bash
+docker run -d --name cloudreve \
+  -p 5212:5212 -p 6888:6888 -p 6888:6888/udp \
+  -v $(pwd)/data:/cloudreve/data \
+  ghcr.io/dark-cc/cloudreve-new:latest
+```
+
 ### 直接运行
 
 ```bash
@@ -59,12 +89,13 @@ CGO_ENABLED=0 go build -trimpath \
 > `assets.zip` 内必须是 `assets/build/index.html`，直接压缩 `build/*` 会导致首页 404。
 > `version.json` 需为 `{"name":"cloudreve-frontend","version":"<后端版本>"}`，否则会提示静态资源版本不一致。
 
-### Docker
+### 自行构建镜像
 
 ```bash
-docker build -t Cloudreve-New ./src
-docker run -d -p 5212:5212 -v $(pwd)/data:/cloudreve/data Cloudreve-New
+docker build -t cloudreve-new:local .
 ```
+
+仓库根目录的 `Dockerfile` 会依次构建前端、嵌入静态资源、编译后端，最终镜像基于 Alpine。
 
 ## 配置
 
