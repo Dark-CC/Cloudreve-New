@@ -33,9 +33,23 @@ Cloudreve-New 是基于 [Cloudreve](https://github.com/cloudreve/Cloudreve) v4 �
 ```text
 cloudreve_<version>_linux_amd64.tar.gz
 cloudreve_<version>_linux_arm64.tar.gz
+cloudreve_<version>_linux_armv5.tar.gz
+cloudreve_<version>_linux_armv6.tar.gz
+cloudreve_<version>_linux_armv7.tar.gz
+cloudreve_<version>_linux_loong64.tar.gz
 cloudreve_<version>_windows_amd64.zip
+cloudreve_<version>_windows_arm64.zip
 cloudreve_<version>_darwin_arm64.tar.gz
+cloudreve_<version>_darwin_amd64.tar.gz
+cloudreve_<version>_freebsd_amd64.tar.gz
+cloudreve_<version>_freebsd_arm64.tar.gz
 checksums.txt
+```
+
+校验下载（Linux / macOS）：
+
+```bash
+sha256sum -c checksums.txt --ignore-missing
 ```
 
 解压后直接运行，压缩包内为单个静态二进制 `cloudreve`（Windows 为 `cloudreve.exe`），
