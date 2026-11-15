@@ -1,5 +1,10 @@
 # Cloudreve-New
 
+[![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue.svg)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/Dark-CC/Cloudreve-New?include_prereleases&sort=semver)](https://github.com/Dark-CC/Cloudreve-New/releases)
+[![Build](https://github.com/Dark-CC/Cloudreve-New/actions/workflows/build.yml/badge.svg)](https://github.com/Dark-CC/Cloudreve-New/actions/workflows/build.yml)
+[![Docker](https://img.shields.io/badge/ghcr.io-cloudreve--new-2496ed?logo=docker&logoColor=white)](https://github.com/Dark-CC/Cloudreve-New/pkgs/container/cloudreve-new)
+
 [English](#english) · [中文](#中文)
 
 Cloudreve-New 是基于 [Cloudreve](https://github.com/cloudreve/Cloudreve) v4 社区版源码构建的
@@ -70,6 +75,12 @@ docker run -d --name cloudreve \
   ghcr.io/dark-cc/cloudreve-new:latest
 ```
 
+或使用仓库内的 `docker-compose.yml`：
+
+```bash
+docker compose up -d
+```
+
 ### 直接运行
 
 ```bash
@@ -110,6 +121,13 @@ docker build -t cloudreve-new:local .
 ```
 
 仓库根目录的 `Dockerfile` 会依次构建前端、嵌入静态资源、编译后端，最终镜像基于 Alpine。
+
+### 本地一键出包（Windows）
+
+```powershell
+.\tools\build-release.ps1          # 完整 12 平台矩阵，产物在 src\dist
+.\tools\build-release.ps1 -Fast    # 只出当前平台，产物为 .\Cloudreve-New.exe
+```
 
 ## 配置
 
