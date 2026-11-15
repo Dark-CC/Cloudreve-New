@@ -27,7 +27,7 @@ jobs:
     name: Build & push image
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           # `tag` selects the version, `ref` selects the source tree. Splitting
           # them lets a workflow fix on master rebuild an existing tag without
