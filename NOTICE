@@ -1,0 +1,32 @@
+Cloudreve-New
+=============
+
+This product is a modified version of Cloudreve.
+
+Upstream project:
+  Cloudreve
+  https://github.com/cloudreve/Cloudreve
+  Copyright (C) Cloudreve contributors
+  Licensed under the GNU General Public License v3.0
+
+Modifications:
+  Cloudreve-New adds features that are absent from the upstream community
+  edition, including abuse reports, audit logs, single sign-on, value-added
+  services (payments, credits, gift codes, storage packs), share ACLs,
+  per-group storage policies, load balancing and archive workflows.
+
+  The modified source is distributed under the same license, GPL-3.0.
+
+Not included:
+  No binaries, JavaScript bundles, assets, license files or any other
+  artifact from the proprietary "Cloudreve Pro" edition are included in,
+  derived into, or redistributed with this repository. "Cloudreve" and the
+  Cloudreve logo are trademarks of their respective owner; this project is
+  not endorsed by or affiliated with the Cloudreve project.
+
+Corresponding source:
+  https://github.com/<your-account>/Cloudreve-New
+
+GPL-3.0 requires that anyone who distributes binaries built from this source
+also make the complete corresponding source available. If you publish builds,
+publish the exact source revision they were built from.
