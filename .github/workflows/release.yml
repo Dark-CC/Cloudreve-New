@@ -74,6 +74,12 @@ jobs:
               sys.exit(f"version mismatch: {v.get('version')} != {expected}")
           PY
 
+      - name: Pre-download modules
+        working-directory: src
+        run: |
+          go mod download
+          go mod verify
+
       - uses: goreleaser/goreleaser-action@v6
         with:
           version: "~> v2"
