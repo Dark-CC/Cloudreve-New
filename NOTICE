@@ -9,6 +9,10 @@ Upstream project:
   Copyright (C) Cloudreve contributors
   Licensed under the GNU General Public License v3.0
 
+This fork:
+  Cloudreve-New
+  https://github.com/Dark-CC/Cloudreve-New
+
 Modifications:
   Cloudreve-New adds features that are absent from the upstream community
   edition, including abuse reports, audit logs, single sign-on, value-added
@@ -25,7 +29,7 @@ Not included:
   not endorsed by or affiliated with the Cloudreve project.
 
 Corresponding source:
-  https://github.com/<your-account>/Cloudreve-New
+  https://github.com/Dark-CC/Cloudreve-New
 
 GPL-3.0 requires that anyone who distributes binaries built from this source
 also make the complete corresponding source available. If you publish builds,

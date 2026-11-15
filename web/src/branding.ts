@@ -6,7 +6,7 @@
  */
 const env = import.meta.env as Record<string, string | undefined>;
 
-const repo = env.VITE_REPO_URL?.replace(/\/+$/, "") ?? "https://github.com/cloudreve-new/cloudreve-new";
+const repo = env.VITE_REPO_URL?.replace(/\/+$/, "") ?? "https://github.com/Dark-CC/Cloudreve-New";
 
 type RepoPath = `${string}/${string}`;
 
