@@ -1,11 +1,5 @@
 version: 2
 
-before:
-  hooks:
-    - go mod tidy
-    - chmod +x ./.build/build-assets.sh
-    - ./.build/build-assets.sh {{.Version}}
-
 builds:
   - env:
       - CGO_ENABLED=0
@@ -14,7 +8,9 @@ builds:
 
     ldflags:
       - -s -w
-      - -X 'github.com/cloudreve/Cloudreve/v4/application/constants.BackendVersion={{.Tag}}' -X 'github.com/cloudreve/Cloudreve/v4/application/constants.LastCommit={{.ShortCommit}}'
+      - -X 'github.com/cloudreve/Cloudreve/v4/application/constants.BackendVersion={{.Version}}'
+      - -X 'github.com/cloudreve/Cloudreve/v4/application/constants.LastCommit={{.ShortCommit}}'
+      - -X 'github.com/cloudreve/Cloudreve/v4/application/constants.IsPro=false'
 
     goos:
       - linux
@@ -49,14 +45,16 @@ builds:
 
 archives:
   - formats: ["tar.gz"]
-    # this name template makes the OS and Arch compatible with the results of uname.
+    # Same layout as the official releases so existing scripts keep working.
     name_template: >-
-      cloudreve-new_{{.Tag}}_{{- .Os }}_{{ .Arch }}
+      cloudreve_{{.Version}}_{{- .Os }}_{{ .Arch }}
       {{- if .Arm }}v{{ .Arm }}{{ end }}
-    # use zip for windows archives
     format_overrides:
       - goos: windows
         formats: ["zip"]
+    files:
+      - LICENSE
+      - NOTICE
 
 checksum:
   name_template: "checksums.txt"
@@ -71,48 +69,20 @@ changelog:
       - "^test:"
 
 release:
-  draft: true
+  github:
+    owner: Dark-CC
+    name: Cloudreve-New
+  draft: false
   prerelease: auto
   target_commitish: "{{ .Commit }}"
-  name_template: "{{.Version}}"
+  name_template: "Cloudreve-New {{.Version}}"
+  footer: |
+    ## 说明
 
-dockers:
-  - dockerfile: Dockerfile
-    use: buildx
-    build_flag_templates:
-      - "--platform=linux/amd64"
-      - "--provenance=false"
-    goos: linux
-    goarch: amd64
-    goamd64: v1
-    extra_files:
-      - .build/aria2.supervisor.conf
-      - .build/entrypoint.sh
-    image_templates:
-      - "cloudreve-new/cloudreve-new:{{ .Tag }}-amd64"
-  - dockerfile: Dockerfile
-    use: buildx
-    build_flag_templates:
-      - "--platform=linux/arm64"
-      - "--provenance=false"
-    goos: linux
-    goarch: arm64
-    extra_files:
-      - .build/aria2.supervisor.conf
-      - .build/entrypoint.sh
-    image_templates:
-      - "cloudreve-new/cloudreve-new:{{ .Tag }}-arm64"
+    - 本项目是基于 Cloudreve v4 社区版源码的非官方分支，遵循 GPL-3.0。
+    - 不包含任何 Pro 版本的二进制、前端产物或授权逻辑。
+    - 下载的压缩包内为单一静态二进制 `cloudreve`，无需额外依赖。
+    - 对应源码：[{{ .Tag }}](https://github.com/Dark-CC/Cloudreve-New/tree/{{ .Tag }})
 
-docker_manifests:
-  - name_template: "cloudreve-new/cloudreve-new:latest"
-    image_templates:
-      - "cloudreve-new/cloudreve-new:{{ .Tag }}-amd64"
-      - "cloudreve-new/cloudreve-new:{{ .Tag }}-arm64"
-  - name_template: "cloudreve-new/cloudreve-new:v4"
-    image_templates:
-      - "cloudreve-new/cloudreve-new:{{ .Tag }}-amd64"
-      - "cloudreve-new/cloudreve-new:{{ .Tag }}-arm64"
-  - name_template: "cloudreve-new/cloudreve-new:{{ .Tag }}"
-    image_templates:
-      - "cloudreve-new/cloudreve-new:{{ .Tag }}-amd64"
-      - "cloudreve-new/cloudreve-new:{{ .Tag }}-arm64"
+# Docker images are built by .github/workflows/docker.yml so a release does not
+# fail when the registry is unavailable.
