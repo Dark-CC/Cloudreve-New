@@ -2,8 +2,11 @@
 
 ###############################################################################
 # 1. Frontend
+#
+# Pinned to $BUILDPLATFORM so pnpm and vite always run natively. Running them
+# under QEMU for linux/arm64 takes tens of minutes and produces the same bytes.
 ###############################################################################
-FROM node:22-alpine AS web
+FROM --platform=$BUILDPLATFORM node:22-alpine AS web
 
 WORKDIR /web
 
@@ -23,8 +26,13 @@ RUN pnpm build
 
 ###############################################################################
 # 2. Backend
+#
+# Go cross-compiles without CGO, so the build stage also stays native.
 ###############################################################################
-FROM golang:1.26-alpine AS build
+FROM --platform=$BUILDPLATFORM golang:1.26-alpine AS build
+
+ARG TARGETOS
+ARG TARGETARCH
 
 WORKDIR /src
 
@@ -48,7 +56,7 @@ RUN mkdir -p application/statics/stage/assets \
 ARG VERSION=4.19.1
 ARG COMMIT=unknown
 
-RUN CGO_ENABLED=0 go build -trimpath \
+RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -trimpath \
       -ldflags "-s -w \
         -X 'github.com/cloudreve/Cloudreve/v4/application/constants.BackendVersion=${VERSION}' \
         -X 'github.com/cloudreve/Cloudreve/v4/application/constants.LastCommit=${COMMIT}' \
