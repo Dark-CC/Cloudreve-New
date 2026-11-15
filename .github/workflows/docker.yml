@@ -48,6 +48,14 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=raw,value=latest,enable={{is_default_branch}}
 
+      # The binary and the embedded version.json must carry a bare version
+      # ("4.19.1"), otherwise the server reports a static resource mismatch.
+      - name: Resolve version
+        id: version
+        run: |
+          raw="${{ inputs.tag || github.ref_name }}"
+          echo "value=${raw#v}" >> "$GITHUB_OUTPUT"
+
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
@@ -58,5 +66,5 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            VERSION=${{ github.ref_name }}
+            VERSION=${{ steps.version.outputs.value }}
             COMMIT=${{ github.sha }}
