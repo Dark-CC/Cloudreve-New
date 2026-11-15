@@ -8,7 +8,7 @@ Cloudreve-New 允许在不改代码的前提下调整对外展示的链接。
 
 | 变量 | 作用 | 默认值 |
 | --- | --- | --- |
-| `VITE_REPO_URL` | 管理端首页的仓库链接、"了解更多"按钮 | `https://github.com/cloudreve-new/cloudreve-new` |
+| `VITE_REPO_URL` | 管理端首页的仓库链接、"了解更多"按钮 | `https://github.com/Dark-CC/Cloudreve-New` |
 | `VITE_HOME_URL` | 管理端首页的"主页"入口 | 同 `VITE_REPO_URL` |
 | `VITE_DOCS_URL` | "文档"入口 | `<repo>#readme` |
 | `VITE_DISCUSSION_URL` | "社区论坛"入口 | `<repo>/discussions` |
