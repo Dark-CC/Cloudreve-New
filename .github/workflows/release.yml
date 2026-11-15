@@ -53,7 +53,6 @@ jobs:
         env:
           npm_package_name: cloudreve-frontend
         run: |
-          chmod +x ./.build/build-assets.sh
           ./.build/build-assets.sh "${{ steps.version.outputs.value }}"
 
       - name: Verify embedded assets
