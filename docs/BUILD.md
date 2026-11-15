@@ -83,22 +83,18 @@ goreleaser build --snapshot --clean
 ```
 
 正式发布由 `.github/workflows/release.yml` 完成：推送形如 `v4.19.1` 的 tag 后，
-工作流会先构建前端并打包 `assets.zip`，再调用 goreleaser 生成 Release。
+工作流会先构建前端并打包 `assets.zip`，再调用 goreleaser 生成 Release，
+同时构建并推送多架构容器镜像到 `ghcr.io/dark-cc/cloudreve-new`。
 
-Docker 镜像由 `.github/workflows/docker.yml` 独立构建，推送到
-`ghcr.io/dark-cc/cloudreve-new`，不影响 Release 是否成功。
+仓库只保留这一个工作流：普通提交不会触发任何 CI，Actions 页面只留下发版记录。
+所有平台的编译都在 GitHub 的 runner 上完成，本地不需要安装 Go / Node。
 
-## 本地一键出包
+## 发版流程
 
-Windows 环境可直接使用 `tools/build-release.ps1`，流程与 CI 一致：
-
-```powershell
-# 完整 12 平台矩阵，产物在 src\dist
-.\tools\build-release.ps1
-
-# 只出当前平台，产物为 .\Cloudreve-New.exe
-.\tools\build-release.ps1 -Fast
+```bash
+git tag v4.19.3
+git push origin v4.19.3
 ```
 
-脚本会自动定位 `pnpm`、`go`、`goreleaser`（优先使用仓库内的 `tools/go`、`.tmp/bin`），
-并把 `GOPATH` / `GOCACHE` 指向仓库内目录，避免污染系统缓存。
+若需要重跑某个已存在的 tag，可在 Actions 页面手动触发 `release` 工作流，
+并填写 `tag` 与 `ref`（`ref` 指定用于编译的源码分支）。

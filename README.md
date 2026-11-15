@@ -122,12 +122,18 @@ docker build -t cloudreve-new:local .
 
 仓库根目录的 `Dockerfile` 会依次构建前端、嵌入静态资源、编译后端，最终镜像基于 Alpine。
 
-### 本地一键出包（Windows）
+### 发布新版本
 
-```powershell
-.\tools\build-release.ps1          # 完整 12 平台矩阵，产物在 src\dist
-.\tools\build-release.ps1 -Fast    # 只出当前平台，产物为 .\Cloudreve-New.exe
+所有平台产物与容器镜像都由 GitHub Actions 构建，本地无需安装 Go/Node 工具链：
+
+```bash
+git tag v4.19.3
+git push origin v4.19.3
 ```
+
+推送 tag 后，`.github/workflows/release.yml` 会自动构建 12 个平台的二进制、
+发布 Release 并推送多架构镜像到 `ghcr.io/dark-cc/cloudreve-new`。
+日常提交不会触发任何 CI，Actions 页面只保留发版记录。
 
 ## 配置
 

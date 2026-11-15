@@ -46,28 +46,15 @@
 
 | 脚本 | 用途 |
 | --- | --- |
-| `build-release.ps1` | 本地一键出包：构建前端 → 打包 `assets.zip` → 编译后端 |
 | `api_commit.ps1` | 通过 GitHub Git Data API 提交（Git 协议被重置时的绕行方案） |
 | `push-to-github.ps1` | 清理 `github.com` DNS 污染后推送 |
 
-本地出包示例：
-
-```powershell
-# 完整 12 平台矩阵（产物在 src\dist）
-.\tools\build-release.ps1
-
-# 只编译当前平台，产物为 .\Cloudreve-New.exe
-.\tools\build-release.ps1 -Fast
-
-# 复用已有 assets.zip，跳过前端构建
-.\tools\build-release.ps1 -SkipFrontend -Fast
-```
-
-正式发布由 CI 完成，只需推送 tag：
+所有编译都在 GitHub Actions 上完成，本地只负责提交与打 tag：
 
 ```bash
 git tag v4.19.2 && git push origin v4.19.2
 ```
 
-`release.yml` 会构建前端并调用 goreleaser 生成全部平台产物，
-`docker.yml` 会并行构建 `ghcr.io/dark-cc/cloudreve-new` 多架构镜像。
+`release.yml` 会构建前端、调用 goreleaser 生成全部平台产物，
+并推送 `ghcr.io/dark-cc/cloudreve-new` 多架构镜像。
+普通提交不会触发 CI，Actions 页面只保留发版记录。
