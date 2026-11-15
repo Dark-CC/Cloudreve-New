@@ -1,0 +1,66 @@
+# Keep the build context small: only Dockerfile, LICENSE/NOTICE, src/ and web/
+# sources are needed. Everything below would otherwise be uploaded to the
+# BuildKit daemon on every build.
+
+.git
+.gitignore
+.github
+.dockerignore
+
+# Go / Node build caches and local toolchains
+.gopath
+.gocache
+.tmp
+**/node_modules
+web/build
+web/dist
+web/.vite
+
+# Local runtime state, data, and backups
+runtime
+data
+files
+uploads
+backup
+.migrate
+.quarantine
+
+# Reference material and scratch files
+.pro-web
+.pro-locales
+.pro-probe
+.pro-refs
+.pro-compare
+.pro-*.txt
+.pro-*.json
+.pack-assets*
+extracted-pro
+*.pro.bin
+.ce-*.txt
+.codex-*.txt
+README.local.md
+DEVLOG.local.md
+
+# Binaries and secrets
+*.exe
+*.bin
+cloudreve
+Cloudreve-New*
+*.ini
+*.env
+.env
+.env.*
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+
+# Editor / OS noise
+.vscode
+.idea
+**/.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*~
