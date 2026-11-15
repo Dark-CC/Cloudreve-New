@@ -9,6 +9,10 @@ on:
       tag:
         description: "Existing tag to build"
         required: true
+      ref:
+        description: "Git ref holding the source to build (defaults to the tag)"
+        required: false
+        default: "master"
 
 permissions:
   contents: write
@@ -22,7 +26,9 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: ${{ inputs.tag || github.ref }}
+          # `tag` selects the version, `ref` selects the source tree, so a
+          # workflow fix on master can rebuild an existing tag without moving it.
+          ref: ${{ inputs.ref || inputs.tag || github.ref }}
 
       - uses: actions/setup-go@v5
         with:
