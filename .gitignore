@@ -71,6 +71,10 @@ node_modules/
 web/build/
 web/dist/
 web/.vite/
+# pnpm is the only supported package manager; stale npm/yarn locks would
+# make Dependabot audit and update the wrong dependency graph.
+package-lock.json
+yarn.lock
 vite.config.ts.timestamp-*
 pnpm-debug.log*
 npm-debug.log*
