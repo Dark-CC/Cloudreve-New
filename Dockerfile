@@ -10,7 +10,8 @@ WORKDIR /web
 RUN corepack enable
 
 COPY web/package.json web/pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile || pnpm install --no-frozen-lockfile
+RUN pnpm install --frozen-lockfile --config.dangerouslyAllowAllBuilds=true \
+ || pnpm install --no-frozen-lockfile --config.dangerouslyAllowAllBuilds=true
 
 COPY web/ ./
 
