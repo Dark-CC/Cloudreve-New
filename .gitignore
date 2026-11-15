@@ -1,0 +1,118 @@
+###############################################################################
+# Cloudreve-New — repository ignore rules
+#
+# This repository ships source code only. Never commit binaries, build caches,
+# production backups, credentials, or any third-party proprietary artifacts.
+###############################################################################
+
+####################
+# Secrets / config
+####################
+*.ini
+*.env
+.env
+.env.*
+!*.env.example
+!.env.example
+!web/.env.example
+conf.ini
+conf.prod.ini
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+id_rsa
+id_ed25519
+id_ecdsa
+.ssh/
+
+####################
+# Production backups / dumps
+####################
+backup/
+.migrate/
+*.dump
+*.sql.gz
+*.tgz
+*.tar.gz
+*.zip.bak-*
+*.bak
+*.bak-*
+*.bkp
+
+####################
+# Binaries
+####################
+*.exe
+*.bin
+cloudreve
+runtime/
+Cloudreve-New*
+
+####################
+# Go build artifacts / caches
+####################
+.gocache/
+.gopath/
+tools/go/
+tools/go*/
+*.test
+*.out
+src/application/statics/assets.zip
+src/application/statics/assets.zip.*
+
+####################
+# Node / frontend build
+####################
+node_modules/
+web/build/
+web/dist/
+web/.vite/
+vite.config.ts.timestamp-*
+pnpm-debug.log*
+npm-debug.log*
+yarn-error.log*
+tsc.out.txt
+
+####################
+# Third-party / proprietary reference material
+####################
+.pro-web/
+.pro-locales/
+.pro-probe/
+.pro-refs/
+.pro-compare/
+.pro-*.txt
+.pro-*.json
+.pack-assets*
+extracted-pro/
+*.pro.bin
+.quarantine/
+.ce-*.txt
+.codex-*.txt
+README.local.md
+DEVLOG.local.md
+
+####################
+# Local scratch space
+####################
+.tmp/
+temp/
+tmp/
+data/
+files/
+uploads/
+scratch/
+
+####################
+# Editor / OS noise
+####################
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*~

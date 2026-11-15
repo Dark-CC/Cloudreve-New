@@ -1,0 +1,76 @@
+name: build
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Go build & test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26.x"
+          cache-dependency-path: src/go.sum
+
+      - name: Seed embedded assets
+        working-directory: src
+        run: |
+          # `//go:embed assets.zip` needs the file to exist. CI compiles the
+          # backend before the frontend job finishes, so seed a placeholder
+          # bundle that only carries version.json.
+          mkdir -p application/statics/stub/assets/build
+          printf '%s' '{"name":"cloudreve-frontend","version":"4.19.1"}' \
+            > application/statics/stub/assets/build/version.json
+          rm -f application/statics/assets.zip
+          (cd application/statics/stub && zip -q -r ../assets.zip .)
+          rm -rf application/statics/stub
+
+      - name: Build
+        working-directory: src
+        run: CGO_ENABLED=0 go build -trimpath -o ../cloudreve .
+
+      - name: Test
+        working-directory: src
+        run: CGO_ENABLED=0 go test ./service/... ./inventory/... ./pkg/... 2>&1 | tail -n 40
+
+  frontend:
+    name: Frontend build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+
+      - name: Install
+        working-directory: web
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Build
+        working-directory: web
+        env:
+          npm_package_name: cloudreve-frontend
+          npm_package_version: 4.19.1
+        run: pnpm build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web-build
+          path: web/build
+          retention-days: 7
