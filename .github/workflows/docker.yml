@@ -7,8 +7,8 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Existing tag to build"
-        required: true
+        description: "Existing tag to build (defaults to the selected ref)"
+        required: false
 
 permissions:
   contents: read
@@ -37,24 +37,30 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Derive image metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=ref,event=tag
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=raw,value=latest,enable={{is_default_branch}}
-
       # The binary and the embedded version.json must carry a bare version
       # ("4.19.1"), otherwise the server reports a static resource mismatch.
       - name: Resolve version
         id: version
         run: |
           raw="${{ inputs.tag || github.ref_name }}"
-          echo "value=${raw#v}" >> "$GITHUB_OUTPUT"
+          value="${raw#v}"
+          echo "value=${value}" >> "$GITHUB_OUTPUT"
+          if [[ "$value" == *-* ]]; then
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Derived from the resolved version instead of github.ref so a manual
+      # dispatch produces the same tags as a tag push.
+      - name: Derive image metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=${{ steps.version.outputs.value }}
+            type=raw,value=latest,enable=${{ steps.version.outputs.prerelease == 'false' }}
 
       - name: Build and push
         uses: docker/build-push-action@v6
