@@ -19,7 +19,9 @@ RUN pnpm install --frozen-lockfile --config.dangerouslyAllowAllBuilds=true \
 COPY web/ ./
 
 ARG VERSION=4.19.1
-ENV npm_package_name=cloudreve-frontend \
+ENV CR_NAME=cloudreve-frontend \
+    CR_VERSION=${VERSION} \
+    npm_package_name=cloudreve-frontend \
     npm_package_version=${VERSION}
 
 RUN pnpm build
@@ -29,7 +31,7 @@ RUN pnpm build
 #
 # Go cross-compiles without CGO, so the build stage also stays native.
 ###############################################################################
-FROM --platform=$BUILDPLATFORM golang:1.27-alpine AS build
+FROM --platform=$BUILDPLATFORM golang:1.26-alpine AS build
 
 ARG TARGETOS
 ARG TARGETARCH

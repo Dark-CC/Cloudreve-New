@@ -76,13 +76,17 @@ if (-not $SkipFrontend) {
 
         $env:npm_package_name = "cloudreve-frontend"
         $env:npm_package_version = $Version
+        # vite reads CR_VERSION first: pnpm would otherwise overwrite
+        # npm_package_version with the version pinned in web/package.json.
+        $env:CR_NAME = "cloudreve-frontend"
+        $env:CR_VERSION = $Version
         $env:NODE_OPTIONS = "--max-old-space-size=8192"
         & $pnpm build
         if ($LASTEXITCODE -ne 0) { throw "pnpm build failed" }
     }
     finally {
         Pop-Location
-        Remove-Item Env:npm_package_name, Env:npm_package_version -ErrorAction SilentlyContinue
+        Remove-Item Env:npm_package_name, Env:npm_package_version, Env:CR_NAME, Env:CR_VERSION -ErrorAction SilentlyContinue
     }
 
     $built = Join-Path $web "build/index.html"

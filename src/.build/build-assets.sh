@@ -18,11 +18,14 @@ rm -rf build
 if [ -f pnpm-lock.yaml ]; then
   pnpm install --frozen-lockfile --config.dangerouslyAllowAllBuilds=true \
     || pnpm install --no-frozen-lockfile --config.dangerouslyAllowAllBuilds=true
-  npm_package_name="cloudreve-frontend" npm_package_version="$VERSION" pnpm build
+  # pnpm overwrites npm_package_version with web/package.json's version, so the
+  # version must be passed through CR_VERSION for vite to pick it up.
+  CR_NAME="cloudreve-frontend" CR_VERSION="$VERSION" \
+    npm_package_name="cloudreve-frontend" npm_package_version="$VERSION" pnpm build
 else
   yarn install --network-timeout 1000000
   yarn version --new-version "$VERSION" --no-git-tag-version
-  yarn run build
+  CR_NAME="cloudreve-frontend" CR_VERSION="$VERSION" yarn run build
 fi
 
 if [ ! -f "$WEB/build/index.html" ]; then

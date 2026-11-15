@@ -9,6 +9,12 @@ import { viteStaticCopy } from "vite-plugin-static-copy";
 const backend = "http://localhost:5212";
 const backendProxyOption = { target: backend, headers: { host: new URL(backend).host } };
 
+// pnpm injects npm_package_version from web/package.json, which is pinned to the
+// upstream version. The release pipeline needs the tag version instead, so an
+// explicit CR_VERSION always wins.
+const assetsVersion = process.env.CR_VERSION || process.env.npm_package_version;
+const assetsName = process.env.CR_NAME || process.env.npm_package_name;
+
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
@@ -47,8 +53,8 @@ export default defineConfig({
       name: "generate-version",
       async writeBundle(outputOptions) {
         const version = {
-          name: process.env.npm_package_name,
-          version: process.env.npm_package_version,
+          name: assetsName,
+          version: assetsVersion,
         };
         const path = resolve(__dirname, outputOptions.dir, "version.json");
         await fs.writeFile(path, JSON.stringify(version));
@@ -59,7 +65,7 @@ export default defineConfig({
     // }),
   ],
   define: {
-    __ASSETS_VERSION__: JSON.stringify(process.env.npm_package_version),
+    __ASSETS_VERSION__: JSON.stringify(assetsVersion),
   },
   build: {
     outDir: "build", // keep same as v3 with minimal changes
