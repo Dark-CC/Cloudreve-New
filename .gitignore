@@ -47,7 +47,7 @@ backup/
 *.exe
 *.bin
 cloudreve
-runtime/
+/runtime/
 Cloudreve-New*
 
 ####################
