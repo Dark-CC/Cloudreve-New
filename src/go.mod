@@ -39,7 +39,7 @@ require (
 	github.com/huaweicloud/huaweicloud-sdk-go-obs v3.24.6+incompatible
 	github.com/jinzhu/gorm v1.9.11
 	github.com/jpillora/backoff v1.0.0
-	github.com/juju/ratelimit v1.0.1
+	github.com/juju/ratelimit v1.0.2
 	github.com/ks3sdklib/aws-sdk-go v1.6.2
 	github.com/lib/pq v1.10.9
 	github.com/meilisearch/meilisearch-go v0.36.0
