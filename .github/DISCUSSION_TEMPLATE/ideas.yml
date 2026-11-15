@@ -1,15 +1,10 @@
-name: "⭐ Feature or enhancement request"
-description: Propose something new.
-labels:
-  - enhancement
+title: Suggestions for New Features
 body:
   - type: checkboxes
     attributes:
       label: Self Checks
       description: "To make sure we get to you in time, please check the following :)"
       options:
-        - label: I have read the [Contributing Guide](../../blob/master/CONTRIBUTING.md).
-          required: true
         - label: I have searched for existing issues [search for existing issues](../../issues), including closed ones.
           required: true
         - label: "Please do not modify this template :) and fill in all the required fields."

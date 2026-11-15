@@ -1,4 +1,4 @@
-title: Suggestions for New Features
+title: "Q&A"
 body:
   - type: checkboxes
     attributes:
@@ -21,13 +21,6 @@ body:
       placeholder: (Any other information, comments, documentations, links, or screenshots that would provide more clarity. This is the place to add anything else not covered above.)
     validations:
       required: false
-  - type: checkboxes
-    attributes:
-      label: 3. Can you help us with this feature?
-      description: Let us know! This is not a commitment, but a starting point for collaboration.
-      options:
-        - label: I am interested in contributing to this feature.
-          required: false
   - type: markdown
     attributes:
       value: Please limit one request per issue.
