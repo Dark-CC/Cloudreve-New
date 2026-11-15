@@ -24,7 +24,27 @@ else
   yarn run build
 fi
 
+if [ ! -f "$WEB/build/index.html" ]; then
+  echo "frontend build output not found at $WEB/build" >&2
+  exit 1
+fi
+
+# The server reads the bundle through fs.Sub(statics, "assets/build"), so the
+# archive must keep that prefix. Stage it instead of zipping build/ directly.
+STAGE="$(mktemp -d)"
+mkdir -p "$STAGE/assets"
+cp -R "$WEB/build" "$STAGE/assets/build"
+
 mkdir -p "$ROOT/application/statics"
-cd "$WEB"
 rm -f "$ROOT/application/statics/assets.zip"
-zip -r - assets/build > "$ROOT/application/statics/assets.zip"
+(
+  cd "$STAGE"
+  zip -q -r - assets/build
+) > "$ROOT/application/statics/assets.zip"
+rm -rf "$STAGE"
+
+echo "assets.zip contains $(unzip -l "$ROOT/application/statics/assets.zip" | tail -1)"
+
+# goreleaser archives live in src/, so the license files must be here too.
+cp -f "$ROOT/../LICENSE" "$ROOT/LICENSE"
+cp -f "$ROOT/../NOTICE" "$ROOT/NOTICE"
