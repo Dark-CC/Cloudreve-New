@@ -1,0 +1,22 @@
+# Cloudreve-New quick start.
+#
+#   docker compose up -d
+#
+# Data (config + SQLite database + uploads) lives in ./data.
+services:
+  cloudreve:
+    image: ghcr.io/dark-cc/cloudreve-new:latest
+    container_name: cloudreve
+    restart: unless-stopped
+    ports:
+      # Web UI and API
+      - "5212:5212"
+      # BitTorrent / aria2 peer port
+      - "6888:6888"
+      - "6888:6888/udp"
+    volumes:
+      - ./data:/cloudreve/data
+    environment:
+      # Set to 1 to let the image run aria2 for offline/magnet downloads.
+      CR_ENABLE_ARIA2: "1"
+      TZ: Asia/Shanghai
