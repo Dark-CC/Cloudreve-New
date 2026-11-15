@@ -23,6 +23,16 @@ updates:
       - dependency-name: "*"
         update-types:
           - "version-update:semver-major"
+      # 0.x packages do not follow semver, so Dependabot treats every minor
+      # bump as safe. monaco-editor 0.57 moved editor.api out of esm/vs/editor,
+      # which breaks the import in MonacoEditor.tsx.
+      - dependency-name: "monaco-editor"
+        update-types:
+          - "version-update:semver-minor"
+      # pdfjs-dist also uses 0.x versioning and has renamed worker entrypoints.
+      - dependency-name: "pdfjs-dist"
+        update-types:
+          - "version-update:semver-minor"
 
   - package-ecosystem: "gomod"
     directory: "/src"
