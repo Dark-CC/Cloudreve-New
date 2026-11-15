@@ -42,19 +42,27 @@ jobs:
       - name: Install zip
         run: sudo apt-get update && sudo apt-get install -y zip
 
+      - name: Resolve version
+        id: version
+        run: |
+          raw="${{ inputs.tag || github.ref_name }}"
+          echo "value=${raw#v}" >> "$GITHUB_OUTPUT"
+
       - name: Build frontend & embed assets
         working-directory: src
         env:
           npm_package_name: cloudreve-frontend
         run: |
           chmod +x ./.build/build-assets.sh
-          ./.build/build-assets.sh "${GITHUB_REF_NAME#v}"
+          ./.build/build-assets.sh "${{ steps.version.outputs.value }}"
 
       - name: Verify embedded assets
         working-directory: src
+        env:
+          EXPECTED_VERSION: ${{ steps.version.outputs.value }}
         run: |
           python3 - <<'PY'
-          import json, zipfile, sys
+          import json, os, sys, zipfile
           z = zipfile.ZipFile("application/statics/assets.zip")
           names = z.namelist()
           assert any(n == "assets/build/index.html" for n in names), "assets/build/index.html missing"
@@ -62,6 +70,9 @@ jobs:
           print("version.json:", v)
           if v.get("name") != "cloudreve-frontend":
               sys.exit("unexpected static resource name")
+          expected = os.environ["EXPECTED_VERSION"]
+          if v.get("version") != expected:
+              sys.exit(f"version mismatch: {v.get('version')} != {expected}")
           PY
 
       - uses: goreleaser/goreleaser-action@v6
