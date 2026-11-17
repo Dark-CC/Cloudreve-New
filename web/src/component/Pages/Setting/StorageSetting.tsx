@@ -1,5 +1,6 @@
 import {
   Box,
+  Button,
   Paper,
   Stack,
   styled,
@@ -15,6 +16,7 @@ import {
 } from "@mui/material";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 import { getStoragePacks } from "../../../api/api.ts";
 import { StoragePack } from "../../../api/dashboard.ts";
 import { Capacity, UserSettings } from "../../../api/user.ts";
@@ -22,6 +24,7 @@ import { useAppDispatch, useAppSelector } from "../../../redux/hooks.ts";
 import { updateUserCapacity } from "../../../redux/thunks/filemanager.ts";
 import { loadSiteConfig } from "../../../redux/thunks/site.ts";
 import { sizeToString } from "../../../util";
+import StorageOutlined from "../../Icons/StorageOutlined.tsx";
 import TimeBadge from "../../Common/TimeBadge.tsx";
 import SettingForm from "./SettingForm.tsx";
 
@@ -161,7 +164,9 @@ export const CapacityBar = ({ capacity, forceRow }: { capacity?: Capacity; force
 const StorageSetting = ({ setting }: StorageSettingProps) => {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
   const capacity = useAppSelector((state) => state.fileManager[0].capacity);
+  const storageProducts = useAppSelector((state) => state.siteConfig.vas.config?.storage_products);
   const [packs, setPacks] = useState<StoragePack[] | undefined>(setting.storage_packs);
 
   useEffect(() => {
@@ -178,6 +183,16 @@ const StorageSetting = ({ setting }: StorageSettingProps) => {
         <Box sx={{ mt: 1 }}>
           <CapacityBar capacity={capacity} />
         </Box>
+        {storageProducts && storageProducts.length > 0 && (
+          <Button
+            sx={{ mt: 1 }}
+            onClick={() => navigate("/shop?tab=storage")}
+            variant="contained"
+            startIcon={<StorageOutlined />}
+          >
+            {t("vas.buyStorage")}
+          </Button>
+        )}
       </SettingForm>
       <SettingForm title={t("vas.validStorage")}>
         <TableContainer sx={{ mt: 1 }} component={Paper}>
