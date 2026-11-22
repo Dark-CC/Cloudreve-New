@@ -61,7 +61,7 @@ sha256sum -c checksums.txt --ignore-missing
 无需额外运行时依赖：
 
 ```bash
-tar -xzf cloudreve_4.19.3_linux_amd64.tar.gz
+tar -xzf cloudreve_4.19.4_linux_amd64.tar.gz
 chmod +x cloudreve
 ./cloudreve -c data/conf.ini server
 ```
@@ -127,8 +127,8 @@ docker build -t cloudreve-new:local .
 所有平台产物与容器镜像都由 GitHub Actions 构建，本地无需安装 Go/Node 工具链：
 
 ```bash
-git tag v4.19.3
-git push origin v4.19.3
+git tag v4.19.4
+git push origin v4.19.4
 ```
 
 推送 tag 后，`.github/workflows/release.yml` 会自动构建 12 个平台的二进制、
