@@ -248,13 +248,18 @@ export function send<T = any>(
         switch (resp.data.code) {
           case Code.CredentialInvalid:
           case Code.CodeLoginRequired:
-            if (!signOutLock) {
+            // Anonymous entry points (public upload links, share pages) have
+            // no login to expire: their auth errors must surface in the page
+            // instead of bouncing the visitor to /session.
+            if (!opts.noCredential && !signOutLock) {
               SessionManager.signOutCurrent();
               router.navigate(
                 "/session?redirect=" + encodeURIComponent(window.location.pathname + window.location.search),
               );
             }
-            signOutLock = true;
+            if (!opts.noCredential) {
+              signOutLock = true;
+            }
         }
 
         throw new AppError(resp.data);

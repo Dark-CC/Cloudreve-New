@@ -541,7 +541,8 @@
     "logDirectLinkDownloaded": "通过<0>直链</0>读取了此对象",
     "logRelocate": "将存储策略转移至 {{newPolicy}}",
     "myPermissions": "我的权限",
-    "inheritedFromParent": "(跟随父目录)"
+    "inheritedFromParent": "(跟随父目录)",
+    "uploadLink": "上传链接"
   },
   "modals": {
     "includePasswordInShareLink": "在链接中包含密码",
@@ -1299,5 +1300,34 @@
     "creditReasonAdjust": "手动调整",
     "creditReasonGiftCode": "兑换礼品码",
     "fulfilling": "履行中"
+  },
+  "uploadLink": {
+    "title": "上传文件",
+    "subtitle": "文件将上传至 {{owner}} 的网盘",
+    "dropHint": "点击选择文件，或拖拽到这里",
+    "maxSize": "单个文件最大 {{size}}",
+    "start": "开始上传",
+    "uploading": "正在上传…",
+    "done": "已完成",
+    "tooLarge": "超出大小限制",
+    "tooSmall": "文件至少需要 2 字节",
+    "invalid": "链接无效或已过期",
+    "dialogTitle": "创建上传链接",
+    "folder": "目标文件夹",
+    "ownerHint": "任何人拿到链接都可以上传，无需登录",
+    "defaultExpiry": "默认有效期 24 小时",
+    "expiry": "链接有效期",
+    "expiryDefault": "默认（24 小时）",
+    "expiryHour": "1 小时",
+    "expiryDay": "1 天",
+    "expiryWeek": "7 天",
+    "expiryMonth": "30 天",
+    "maxFileSize": "单个文件大小限制",
+    "sizeUnlimited": "不限制",
+    "link": "上传链接",
+    "send": "发送链接",
+    "createFailed": "创建上传链接失败",
+    "edgeUnavailable": "该存储策略未启用边缘上传",
+    "missingToken": "边缘未返回分片令牌"
   }
 }

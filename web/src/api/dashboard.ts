@@ -267,6 +267,11 @@ export interface PolicySetting {
   source_auth?: boolean;
   qiniu_upload_cdn?: boolean;
   chunk_concurrency?: number;
+  oneyunpan_download_endpoint?: string;
+  oneyunpan_upload_endpoint?: string;
+  oneyunpan_edge_endpoint?: string;
+  oneyunpan_ticket_key?: string;
+  oneyunpan_edge_site?: string;
   encryption?: boolean;
 }
 

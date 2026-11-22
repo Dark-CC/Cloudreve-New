@@ -13,6 +13,7 @@ import SSOCallback from "../component/Pages/Login/Signin/SSOCallback.tsx";
 import SignIn from "../component/Pages/Login/Signin/SignIn.tsx";
 import SignUp from "../component/Pages/Login/Signup.tsx";
 import NoMatch from "../component/Pages/NoMatch.tsx";
+import UploadLinkPage from "../component/Pages/UploadLink/UploadLinkPage.tsx";
 
 export const router = createBrowserRouter([
   {
@@ -21,6 +22,10 @@ export const router = createBrowserRouter([
     element: <App />,
     children: [
       { path: "/", element: <HomeRedirect /> },
+      {
+        path: "/upload/:token",
+        element: <UploadLinkPage />,
+      },
       {
         path: "/",
         element: <HeadlessFrame />,

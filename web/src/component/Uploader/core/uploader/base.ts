@@ -132,7 +132,14 @@ export default abstract class Base {
     });
   };
 
-  public run = async () => {
+  /**
+   * Creates (or restores) the upload session and prepares the blob to send.
+   *
+   * Split from `run` so that a policy which can only be resolved server side
+   * (load balance) can prepare the session first, then hand the work over to
+   * the uploader that matches the resolved policy.
+   */
+  protected prepare = async (): Promise<boolean> => {
     this.logger.info("Start upload task, create upload session...");
     this.transit(Status.preparing);
     const cachedInfo = utils.getResumeCtx(this.task, this.logger);
@@ -165,7 +172,7 @@ export default abstract class Base {
       if (!("crypto" in window)) {
         this.logger.error("Encryption is not supported in this browser");
         this.setError(new Error("Web Crypto API is not supported in this browser"));
-        return;
+        return false;
       }
 
       const encryptedBlob = new EncryptedBlob(this.task.file, this.task.session?.encrypt_metadata);
@@ -173,13 +180,29 @@ export default abstract class Base {
     } else {
       this.task.blob = this.task.file;
     }
+    return true;
+  };
 
+  /** Uploads the prepared blob and finalizes the session. */
+  protected execute = async () => {
     this.transit(Status.processing);
     await this.upload();
     await this.afterUpload();
     utils.removeResumeCtx(this.task, this.logger);
     this.transit(Status.finished);
     this.logger.info("Upload task completed");
+  };
+
+  public run = async () => {
+    if (!(await this.prepare())) {
+      return;
+    }
+    await this.execute();
+  };
+
+  /** Runs a task whose session was already prepared by another uploader. */
+  public runPrepared = async () => {
+    await this.execute();
   };
 
   public abstract upload(): Promise<any>;

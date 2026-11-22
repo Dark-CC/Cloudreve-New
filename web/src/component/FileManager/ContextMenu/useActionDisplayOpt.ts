@@ -64,6 +64,7 @@ export interface DisplayOption {
   showOrganize?: boolean;
   showCopy?: boolean;
   showShare?: boolean;
+  showUploadLink?: boolean;
   showInfo?: boolean;
   showDirectLink?: boolean;
 
@@ -232,6 +233,15 @@ export const getActionOpt = (
     (!targets[0].metadata ||
       (!targets[0].metadata[Metadata.share_redirect] && !targets[0].metadata[Metadata.restore_uri]));
   display.showMove = display.hasUpdatable && !!display.orCapability;
+  display.showUploadLink =
+    targets.length == 1 &&
+    !!currentUser &&
+    targets[0].type == FileType.folder &&
+    targets[0].owned &&
+    groupBs.enabled(GroupPermission.share) &&
+    display.allUpdatable &&
+    !!display.orCapability &&
+    display.orCapability.enabled(NavigatorCapability.upload_file);
   display.showTags =
     display.hasUpdatable && display.orCapability && display.orCapability.enabled(NavigatorCapability.update_metadata);
   display.showChangeFolderColor =

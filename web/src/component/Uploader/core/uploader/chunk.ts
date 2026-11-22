@@ -157,7 +157,7 @@ export default abstract class Chunk extends Base {
     }
   }
 
-  private getConcurrency(): number {
+  protected getConcurrency(): number {
     return this.task.policy.chunk_concurrency || this.DEFAULT_CONCURRENCY;
   }
 

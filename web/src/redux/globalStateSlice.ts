@@ -147,6 +147,10 @@ export interface GlobalStateSlice {
   shareLinkDialogFile?: FileResponse;
   shareLinkDialogShare?: Share;
 
+  // Public upload link dialog
+  uploadLinkDialogOpen?: boolean;
+  uploadLinkDialogFile?: FileResponse;
+
   // Version control dialog
   versionControlDialogOpen?: boolean;
   versionControlDialogFile?: FileResponse;
@@ -833,6 +837,19 @@ export const globalStateSlice = createSlice({
     closeShareLinkDialog: (state) => {
       state.shareLinkDialogOpen = false;
     },
+    setUploadLinkDialog: (
+      state,
+      action: PayloadAction<{
+        open: boolean;
+        file?: FileResponse;
+      }>,
+    ) => {
+      state.uploadLinkDialogOpen = action.payload.open;
+      state.uploadLinkDialogFile = action.payload.file;
+    },
+    closeUploadLinkDialog: (state) => {
+      state.uploadLinkDialogOpen = false;
+    },
     setSidebar: (state, action: PayloadAction<{ open: boolean; target?: FileResponse | string }>) => {
       state.sidebarOpen = action.payload.open;
       state.sidebarTarget = action.payload.target;
@@ -1006,6 +1023,8 @@ export const {
   addShareInfo,
   setShareLinkDialog,
   closeShareLinkDialog,
+  setUploadLinkDialog,
+  closeUploadLinkDialog,
   setChangeIconDialog,
   closeChangeIconDialog,
   setTagsDialog,

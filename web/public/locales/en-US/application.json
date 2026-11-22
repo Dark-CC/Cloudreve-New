@@ -541,7 +541,8 @@
     "logDirectLinkDownloaded": "Downloaded via a <0>direct link</0>",
     "logRelocate": "Relocated storage policy to {{newPolicy}}",
     "myPermissions": "My permissions",
-    "inheritedFromParent": "(Inherited from parent)"
+    "inheritedFromParent": "(Inherited from parent)",
+    "uploadLink": "Upload link"
   },
   "modals": {
     "includePasswordInShareLink": "Include password in share link",
@@ -1297,5 +1298,34 @@
     "creditReasonAdjust": "Manual adjustment",
     "creditReasonGiftCode": "Redeem gift code",
     "fulfilling": "Fulfilling"
+  },
+  "uploadLink": {
+    "title": "Upload files",
+    "subtitle": "Files are uploaded to {{owner}}'s drive",
+    "dropHint": "Click to choose files, or drag them here",
+    "maxSize": "Max {{size}} per file",
+    "start": "Start upload",
+    "uploading": "Uploading…",
+    "done": "Done",
+    "tooLarge": "Exceeds the size limit",
+    "tooSmall": "Files must be at least 2 bytes",
+    "invalid": "This link is invalid or has expired",
+    "dialogTitle": "Create upload link",
+    "folder": "Destination folder",
+    "ownerHint": "Anyone with this link can upload without signing in",
+    "defaultExpiry": "Valid for 24 hours by default",
+    "expiry": "Link expiry",
+    "expiryDefault": "Default (24 hours)",
+    "expiryHour": "1 hour",
+    "expiryDay": "1 day",
+    "expiryWeek": "7 days",
+    "expiryMonth": "30 days",
+    "maxFileSize": "Per-file size limit",
+    "sizeUnlimited": "Unlimited",
+    "link": "Upload link",
+    "send": "Send link",
+    "createFailed": "Failed to create the upload link",
+    "edgeUnavailable": "This storage policy has no edge upload endpoint",
+    "missingToken": "The edge returned no chunk token"
   }
 }

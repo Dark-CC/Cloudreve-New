@@ -120,6 +120,16 @@ const Uploader = () => {
     uploadManager.setPolicy(policy, path);
   }, [policy, path]);
 
+  useEffect(() => {
+    const probe = () => uploadManager.hasActiveTasks();
+    (window as any).__cloudreveHasActiveUploads = probe;
+    return () => {
+      if ((window as any).__cloudreveHasActiveUploads === probe) {
+        delete (window as any).__cloudreveHasActiveUploads;
+      }
+    };
+  }, [uploadManager]);
+
   const handleUploaderError = useCallback(
     (e: any) => {
       if (e instanceof UploaderError) {

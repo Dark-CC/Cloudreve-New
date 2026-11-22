@@ -116,6 +116,41 @@ const ServerSetting = () => {
             </SettingForm>
           </SettingSectionContent>
         </SettingSection>
+        <SettingSection>
+          <Typography variant="h6" gutterBottom>
+            {t("settings.oneyunpanEdge")}
+          </Typography>
+          <SettingSectionContent>
+            <SettingForm title={t("settings.oneyunpanEdgeEndpoint")} lgWidth={5}>
+              <FormControl fullWidth>
+                <DenseFilledTextField
+                  value={values.oneyunpan_edge_endpoint ?? ""}
+                  onChange={(e) => setSettings({ oneyunpan_edge_endpoint: e.target.value })}
+                />
+                <NoMarginHelperText>{t("settings.oneyunpanEdgeEndpointDes")}</NoMarginHelperText>
+              </FormControl>
+            </SettingForm>
+            <SettingForm title={t("settings.oneyunpanEdgeTicketKey")} lgWidth={5}>
+              <FormControl fullWidth>
+                <DenseFilledTextField
+                  type="password"
+                  value={values.oneyunpan_edge_ticket_key ?? ""}
+                  onChange={(e) => setSettings({ oneyunpan_edge_ticket_key: e.target.value })}
+                />
+                <NoMarginHelperText>{t("settings.oneyunpanEdgeTicketKeyDes")}</NoMarginHelperText>
+              </FormControl>
+            </SettingForm>
+            <SettingForm title={t("settings.oneyunpanEdgeSite")} lgWidth={5}>
+              <FormControl fullWidth>
+                <DenseFilledTextField
+                  value={values.oneyunpan_edge_site ?? ""}
+                  onChange={(e) => setSettings({ oneyunpan_edge_site: e.target.value })}
+                />
+                <NoMarginHelperText>{t("settings.oneyunpanEdgeSiteDes")}</NoMarginHelperText>
+              </FormControl>
+            </SettingForm>
+          </SettingSectionContent>
+        </SettingSection>
       </Stack>
     </Box>
   );

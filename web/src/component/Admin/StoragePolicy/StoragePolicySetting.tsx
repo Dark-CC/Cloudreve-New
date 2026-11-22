@@ -24,6 +24,7 @@ import CosWizard from "./Wizards/COS/CosWizard";
 import LocalWizard from "./Wizards/Local/LocalWizard";
 import ObsWizard from "./Wizards/OBS/ObsWizard";
 import OneDriveWizard from "./Wizards/OneDrive/OneDriveWizard";
+import OneYunPanWizard from "./Wizards/OneYunPan/OneYunPanWizard";
 import OssWizard from "./Wizards/OSS/OssWizard";
 import QiniuWizard from "./Wizards/Qiniu/QiniuWizard";
 import RemoteWizard from "./Wizards/Remote/RemoteWizard";
@@ -262,6 +263,18 @@ export const PolicyPropsMap: Record<PolicyType, PolicyProps> = {
     nativeExtractorDoc: "https://support.huaweicloud.com/intl/zh-cn/usermanual-obs/obs_01_0410.html",
     nativeExtractorDesDoc: "https://support.huaweicloud.com/intl/zh-cn/usermanual-obs/obs_01_0410.html",
   },
+  [PolicyType.oneyunpan]: {
+    name: "policy.oneyunpan",
+    img: "/static/img/oneyunpan.svg",
+    wizardSize: "sm",
+    wizard: OneYunPanWizard,
+    endpointName: "API Endpoint",
+    akName: "账号",
+    skName: "密码",
+    chunkSizeMin: 1024 * 1024,
+    chunkSizeMax: 88 * 1024 * 1024,
+    chunkSizeDes: "policy.chunkSizeDes",
+  },
   [PolicyType.qiniu]: {
     name: "policy.qiniu",
     img: "/static/img/qiniu.png",
@@ -472,7 +485,9 @@ const StoragePolicySetting = () => {
             policies.map((p) => <StoragePolicyCard key={`loading-${p.id}`} loading={true} />)}
           {loading &&
             policies.length === 0 &&
-            Array.from(Array(5)).map((_, index) => <StoragePolicyCard key={`loading-placeholder-${index}`} loading={true} />)}
+            Array.from(Array(5)).map((_, index) => (
+              <StoragePolicyCard key={`loading-placeholder-${index}`} loading={true} />
+            ))}
         </Grid>
         {count > 0 && (
           <Box sx={{ mt: 1 }}>

@@ -42,7 +42,12 @@ const MediaMetadataSection = () => {
   );
 
   const noNativeExtractor = useMemo(() => {
-    return values.type === PolicyType.s3 || values.type === PolicyType.ks3 || values.type === PolicyType.onedrive;
+    return (
+      values.type === PolicyType.s3 ||
+      values.type === PolicyType.ks3 ||
+      values.type === PolicyType.onedrive ||
+      values.type === PolicyType.oneyunpan
+    );
   }, [values.type]);
 
   if (values.type === PolicyType.local) {

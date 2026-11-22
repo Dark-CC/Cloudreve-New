@@ -47,7 +47,8 @@ const StorageAndUploadSection = () => {
       values.type === PolicyType.cos ||
       values.type === PolicyType.obs ||
       values.type === PolicyType.oss ||
-      values.type === PolicyType.qiniu
+      values.type === PolicyType.qiniu ||
+      values.type === PolicyType.oneyunpan
     );
   }, [values.type]);
 
@@ -404,7 +405,7 @@ const StorageAndUploadSection = () => {
             </SettingForm>
           )}
         </Collapse>
-        {values.type !== PolicyType.local && (
+        {values.type !== PolicyType.local && values.type !== PolicyType.oneyunpan && (
           <>
             <SettingForm lgWidth={5}>
               <FormControl fullWidth>

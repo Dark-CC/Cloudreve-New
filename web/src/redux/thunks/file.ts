@@ -71,6 +71,7 @@ import {
   setExtractArchiveDialog,
   setRemoteDownloadDialog,
   setShareLinkDialog,
+  setUploadLinkDialog,
   setSidebar,
   updateLockConflicts,
 } from "../globalStateSlice.ts";
@@ -930,6 +931,15 @@ export function openShareDialog(index: number, src: FileResponse): AppThunk {
   return async (dispatch, _getState) => {
     dispatch(closeContextMenu({ index, value: undefined }));
     dispatch(setShareLinkDialog({ open: true, file: src }));
+  };
+}
+
+// openUploadLinkDialog reuses the share dialog state so both entries live in
+// the same modal slot; the dialog itself only needs the target folder.
+export function openUploadLinkDialog(index: number, src: FileResponse): AppThunk {
+  return async (dispatch, _getState) => {
+    dispatch(closeContextMenu({ index, value: undefined }));
+    dispatch(setUploadLinkDialog({ open: true, file: src }));
   };
 }
 

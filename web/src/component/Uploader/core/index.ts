@@ -6,9 +6,11 @@ import { Task, TaskType } from "./types";
 import Base, { MessageColor } from "./uploader/base";
 import COS from "./uploader/cos";
 import KS3 from "./uploader/ks3";
+import LoadBalance from "./uploader/loadBalance";
 import Local from "./uploader/local";
 import OBS from "./uploader/obs.ts";
 import OneDrive from "./uploader/onedrive";
+import Oneyunpan from "./uploader/oneyunpan";
 import OSS from "./uploader/oss";
 import ResumeHint from "./uploader/placeholder";
 import Qiniu from "./uploader/qiniu";
@@ -84,6 +86,11 @@ export default class UploadManager {
     }
   }
 
+  /** True while any upload is queued or running in this manager. */
+  public hasActiveTasks(): boolean {
+    return this.pool.processing.length > 0 || this.pool.queue.length > 0;
+  }
+
   beforeLeave = (e: BeforeUnloadEvent) => {
     if (this.pool.processing.length == 0) {
       return;
@@ -130,6 +137,10 @@ export default class UploadManager {
         return new KS3(task, this);
       case PolicyType.obs:
         return new OBS(task, this);
+      case PolicyType.oneyunpan:
+        return new Oneyunpan(task, this);
+      case PolicyType.load_balance:
+        return new LoadBalance(task, this);
       default:
         throw new UnknownPolicyError("Unknown policy type.", task.policy);
     }

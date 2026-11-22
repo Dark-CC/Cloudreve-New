@@ -384,6 +384,9 @@ const Settings = () => {
                     "hash_id_salt",
                     "access_token_ttl",
                     "refresh_token_ttl",
+                    "oneyunpan_edge_endpoint",
+                    "oneyunpan_edge_ticket_key",
+                    "oneyunpan_edge_site",
                   ]}
                 >
                   <ServerSetting />

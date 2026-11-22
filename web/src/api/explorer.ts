@@ -116,6 +116,7 @@ export enum PolicyType {
   s3 = "s3",
   ks3 = "ks3",
   obs = "obs",
+  oneyunpan = "oneyunpan",
   load_balance = "load_balance",
 }
 
@@ -604,6 +605,7 @@ export interface UploadCredential {
   mime_type?: string;
   upload_policy?: string;
   encrypt_metadata?: EncryptMetadata;
+  edge_ticket?: string;
 }
 
 export interface DeleteUploadSessionService {

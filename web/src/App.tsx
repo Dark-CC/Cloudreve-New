@@ -3,7 +3,7 @@ import { grey } from "@mui/material/colors";
 import { ThemeOptions } from "@mui/material/styles/createTheme";
 import i18next from "i18next";
 import { enqueueSnackbar, MaterialDesignContent, SnackbarProvider } from "notistack";
-import { Suspense, useEffect, useMemo } from "react";
+import { Suspense, useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Outlet } from "react-router-dom";
 import { useRegisterSW } from "virtual:pwa-register/react";
@@ -202,15 +202,53 @@ export const App = () => {
   const theme = useGeneratedTheme();
   const { t } = useTranslation();
 
+  // Uploaders register a probe here so the service worker update can avoid
+  // reloading the page while transfers are still running.
+  const activeUploadsRef = useRef<() => boolean>(() => false);
+  useEffect(() => {
+    activeUploadsRef.current = () => (window as any).__cloudreveHasActiveUploads?.() ?? false;
+  }, []);
+
   const {
     offlineReady: [offlineReady, setOfflineReady],
     needRefresh: [needRefresh, setNeedRefresh],
     updateServiceWorker,
   } = useRegisterSW({
+    // Always take a new deployment immediately. A stale precache kept serving
+    // the previous bundle after an upgrade, so the client kept running code
+    // that did not know about newly added storage policy types.
+    onRegisteredSW(_swUrl, registration) {
+      if (!registration) {
+        return;
+      }
+      registration.update().catch(() => undefined);
+      setInterval(() => registration.update().catch(() => undefined), 60 * 60 * 1000);
+    },
     onRegisterError(error) {
       console.log("SW registration error", error);
     },
   });
+
+  useEffect(() => {
+    if (needRefresh) {
+      // Switching versions mid-upload would drop the running transfers, so
+      // wait for the task list to drain before taking the new bundle.
+      if (activeUploadsRef.current()) {
+        const timer = setInterval(() => {
+          if (!activeUploadsRef.current()) {
+            clearInterval(timer);
+            updateServiceWorker(true);
+            removeI18nCache();
+          }
+        }, 2000);
+        return () => clearInterval(timer);
+      }
+
+      updateServiceWorker(true);
+      removeI18nCache();
+      return;
+    }
+  }, [needRefresh, updateServiceWorker]);
 
   useEffect(() => {
     if (needRefresh) {

@@ -441,6 +441,29 @@ const BasicInfoSection = () => {
             </SettingForm>
           </>
         )}
+        {values.type === PolicyType.oneyunpan && (
+          <SettingForm title={t("policy.accessCredential")} lgWidth={5}>
+            <FormControl fullWidth>
+              <DenseFilledTextField
+                placeholder={t("policy.oneyunpanAccount")}
+                fullWidth
+                required
+                value={values.access_key}
+                onChange={onAccessKeyChange}
+              />
+              <DenseFilledTextField
+                placeholder={t("policy.oneyunpanPassword")}
+                sx={{ mt: 1 }}
+                fullWidth
+                required
+                type="password"
+                value={values.secret_key}
+                onChange={onSecretKeyChange}
+              />
+              <NoMarginHelperText>{t("policy.oneyunpanCredentialDes")}</NoMarginHelperText>
+            </FormControl>
+          </SettingForm>
+        )}
         {values.type === PolicyType.remote && (
           <SettingForm title={t("policy.node")} lgWidth={5}>
             <NodeSelectionInput fullWidth required value={values.node_id ?? 0} onChange={onNodeChange} />

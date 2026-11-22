@@ -16,6 +16,7 @@ import {
   goToSharedLink,
   newRemoteDownload,
   openShareDialog,
+  openUploadLinkDialog,
   openSidebar,
   renameFile,
   restoreFile,
@@ -123,6 +124,7 @@ const ContextMenu = ({ fmIndex = 0 }: ContextMenuProps) => {
     displayOpt.showCreateFolder ||
     displayOpt.showCreateFile ||
     displayOpt.showShare ||
+    displayOpt.showUploadLink ||
     displayOpt.showRename ||
     displayOpt.showCopy ||
     displayOpt.showDirectLink;
@@ -253,6 +255,14 @@ const ContextMenu = ({ fmIndex = 0 }: ContextMenuProps) => {
             <ShareOutlined fontSize="small" />
           </ListItemIcon>
           <ListItemText>{t("application:fileManager.share")}</ListItemText>
+        </SquareMenuItem>
+      )}
+      {displayOpt.showUploadLink && (
+        <SquareMenuItem onClick={() => dispatch(openUploadLinkDialog(fmIndex, targets[0]))}>
+          <ListItemIcon>
+            <Upload fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>{t("application:fileManager.uploadLink")}</ListItemText>
         </SquareMenuItem>
       )}
       {displayOpt.showRename && (
