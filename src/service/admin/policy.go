@@ -402,16 +402,20 @@ func validateOneyunpanPolicy(c *gin.Context, policy *ent.StoragePolicy) error {
 	policy.Server = oneyunpan.DefaultAPIEndpoint
 	policy.Settings.OneyunpanDownloadEndpoint = oneyunpan.DefaultDownloadEndpoint
 	policy.Settings.OneyunpanUploadEndpoint = oneyunpan.DefaultUploadEndpoint
-	// The edge settings are site-wide now; keep the policy copy empty so the
-	// ticket key never gets duplicated across policies.
-	policy.Settings.OneyunpanEdgeEndpoint = ""
-	policy.Settings.OneyunpanTicketKey = ""
-	policy.Settings.OneyunpanEdgeSite = ""
 
 	if !edge.Enabled() {
 		// Without an edge endpoint the driver can only stream through this node.
+		// Keep the legacy per-policy copy in that case: it is the only place the
+		// edge configuration may still exist for installations that predate the
+		// site-wide settings, and wiping it would make the edge impossible to
+		// recover from this form.
 		policy.Settings.Relay = true
 	} else {
+		// The edge settings are site-wide now; drop the policy copy so the
+		// ticket key never gets duplicated across policies.
+		policy.Settings.OneyunpanEdgeEndpoint = ""
+		policy.Settings.OneyunpanTicketKey = ""
+		policy.Settings.OneyunpanEdgeSite = ""
 		policy.Settings.Relay = false
 		if _, err := oneyunpan.DecodeTicketKey(edge.TicketKey); err != nil {
 			return serializer.NewError(serializer.CodeParamErr, "1yunpan edge upload requires a 32-byte ticket key (base64)", err)

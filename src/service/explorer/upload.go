@@ -90,7 +90,7 @@ func (service *CreateUploadSessionService) Create(c context.Context) (*UploadSes
 		return nil, err
 	}
 
-	return BuildUploadSessionResponse(credential, hasher), nil
+	return BuildUploadSessionResponse(c, credential, hasher), nil
 }
 
 type (

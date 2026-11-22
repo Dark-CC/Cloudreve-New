@@ -15,6 +15,7 @@ import (
 	"github.com/cloudreve/Cloudreve/v4/inventory/types"
 	"github.com/cloudreve/Cloudreve/v4/pkg/cluster"
 	"github.com/cloudreve/Cloudreve/v4/pkg/filemanager/driver"
+	"github.com/cloudreve/Cloudreve/v4/pkg/filemanager/driver/oneyunpan"
 	"github.com/cloudreve/Cloudreve/v4/pkg/filemanager/fs"
 	"github.com/cloudreve/Cloudreve/v4/pkg/logging"
 	"github.com/cloudreve/Cloudreve/v4/pkg/queue"
@@ -129,9 +130,17 @@ func (m *manager) CreateUploadSession(ctx context.Context, req *fs.UploadRequest
 	}
 
 	uploadSession.ChunkSize = uploadSession.Policy.Settings.ChunkSize
+	// 1yunpan decides its upload mode from the site-wide edge configuration
+	// rather than the relay flag persisted on the policy: the flag is only a
+	// cached projection and may be stale after the edge was configured (or
+	// removed). Every other driver keeps honouring the stored flag.
+	relay := uploadSession.Policy.Settings.Relay
+	if uploadSession.Policy.Type == types.PolicyTypeOneyunpan {
+		relay = oneyunpan.EffectiveRelay(ctx, m.settings, uploadSession.Policy)
+	}
 	// Create upload credential for underlying storage driver
 	credential := &fs.UploadCredential{}
-	unrelayed := !uploadSession.Policy.Settings.Relay || m.stateless
+	unrelayed := !relay || m.stateless
 	if unrelayed {
 		credential, err = d.Token(ctx, uploadSession, req)
 		if err != nil {

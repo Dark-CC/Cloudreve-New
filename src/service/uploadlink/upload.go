@@ -84,7 +84,7 @@ func (s *CreateSessionService) Create(c *gin.Context) (*explorer.UploadSessionRe
 		return nil, err
 	}
 
-	return explorer.BuildUploadSessionResponse(credential, dep.HashIDEncoder()), nil
+	return explorer.BuildUploadSessionResponse(c, credential, dep.HashIDEncoder()), nil
 }
 
 // CompleteService finishes a visitor upload. The callback secret is delivered

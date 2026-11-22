@@ -15,6 +15,7 @@ import (
 	"github.com/cloudreve/Cloudreve/v4/pkg/auth"
 	"github.com/cloudreve/Cloudreve/v4/pkg/boolset"
 	"github.com/cloudreve/Cloudreve/v4/pkg/cluster/routes"
+	"github.com/cloudreve/Cloudreve/v4/pkg/filemanager/driver/oneyunpan"
 	"github.com/cloudreve/Cloudreve/v4/pkg/filemanager/fs"
 	"github.com/cloudreve/Cloudreve/v4/pkg/filemanager/manager"
 	"github.com/cloudreve/Cloudreve/v4/pkg/hashid"
@@ -168,7 +169,7 @@ type UploadSessionResponse struct {
 	EdgeTicket      string                 `json:"edge_ticket,omitempty"`
 }
 
-func BuildUploadSessionResponse(session *fs.UploadCredential, hasher hashid.Encoder) *UploadSessionResponse {
+func BuildUploadSessionResponse(ctx context.Context, session *fs.UploadCredential, hasher hashid.Encoder) *UploadSessionResponse {
 	res := &UploadSessionResponse{
 		SessionID:       session.SessionID,
 		ChunkSize:       session.ChunkSize,
@@ -178,7 +179,7 @@ func BuildUploadSessionResponse(session *fs.UploadCredential, hasher hashid.Enco
 		CompleteURL:     session.CompleteURL,
 		Uri:             session.Uri,
 		UploadID:        session.UploadID,
-		StoragePolicy:   BuildStoragePolicy(session.StoragePolicy, hasher),
+		StoragePolicy:   BuildStoragePolicy(ctx, session.StoragePolicy, hasher),
 		CallbackSecret:  session.CallbackSecret,
 		MimeType:        session.MimeType,
 		UploadPolicy:    session.UploadPolicy,
@@ -400,7 +401,7 @@ func BuildListResponse(ctx context.Context, u *ent.User, parent fs.File, res *fs
 		RecursionLimitReached: res.RecursionLimitReached,
 		MixedType:             res.MixedType,
 		SingleFileView:        res.SingleFileView,
-		StoragePolicy:         BuildStoragePolicy(res.StoragePolicy, hasher),
+		StoragePolicy:         BuildStoragePolicy(ctx, res.StoragePolicy, hasher),
 		View:                  res.View,
 	}
 
@@ -450,7 +451,7 @@ func BuildExtendedInfo(ctx context.Context, u *ent.User, f fs.File, hasher hashi
 	base := dep.SettingProvider().SiteURL(ctx)
 
 	ext := &ExtendedInfo{
-		StoragePolicy: BuildStoragePolicy(extendedInfo.StoragePolicy, hasher),
+		StoragePolicy: BuildStoragePolicy(ctx, extendedInfo.StoragePolicy, hasher),
 		StorageUsed:   extendedInfo.StorageUsed,
 		Permissions:   extendedInfo.Permissions,
 		Entities: lo.Map(f.Entities(), func(e fs.Entity, index int) Entity {
@@ -498,7 +499,7 @@ func BuildEntity(ctx context.Context, extendedInfo *fs.FileExtendedInfo, e fs.En
 		ID:            hashid.EncodeEntityID(hasher, e.ID()),
 		Type:          e.Type(),
 		CreatedAt:     e.CreatedAt(),
-		StoragePolicy: BuildStoragePolicy(extendedInfo.EntityStoragePolicies[e.PolicyID()], hasher),
+		StoragePolicy: BuildStoragePolicy(ctx, extendedInfo.EntityStoragePolicies[e.PolicyID()], hasher),
 		Size:          e.Size(),
 		CreatedBy:     u,
 		EncryptedWith: encryptedWith,
@@ -513,7 +514,40 @@ func BuildShareLink(s *ent.Share, hasher hashid.Encoder, base *url.URL, unlocked
 	return routes.MasterShareUrl(base, shareId, "").String()
 }
 
-func BuildStoragePolicy(sp *ent.StoragePolicy, hasher hashid.Encoder) *StoragePolicy {
+// dependencyFromContext returns nil instead of panicking when the caller's
+// context carries no dependency manager. A few policy rendering paths (for
+// example share previews built from a bare request context) do not go through
+// the usual middleware.
+func dependencyFromContext(ctx context.Context) (dep dependency.Dep) {
+	defer func() {
+		if recover() != nil {
+			dep = nil
+		}
+	}()
+	return dependency.FromContext(ctx)
+}
+
+// policyRelay resolves the relay flag reported to clients. 1yunpan derives it
+// from the site-wide edge configuration instead of the value stored on the
+// policy, matching the server-side upload mode decision so the browser picks
+// the edge uploader as soon as the edge is configured.
+func policyRelay(ctx context.Context, sp *ent.StoragePolicy) bool {
+	if sp.Settings == nil {
+		return false
+	}
+	if sp.Type != types.PolicyTypeOneyunpan {
+		return sp.Settings.Relay
+	}
+
+	dep := dependencyFromContext(ctx)
+	if dep == nil {
+		return sp.Settings.Relay
+	}
+	return oneyunpan.EffectiveRelay(ctx, dep.SettingProvider(), sp)
+}
+
+// BuildStoragePolicy renders a storage policy for the frontend.
+func BuildStoragePolicy(ctx context.Context, sp *ent.StoragePolicy, hasher hashid.Encoder) *StoragePolicy {
 	if sp == nil {
 		return nil
 	}
@@ -523,7 +557,7 @@ func BuildStoragePolicy(sp *ent.StoragePolicy, hasher hashid.Encoder) *StoragePo
 		Name:             sp.Name,
 		Type:             types.PolicyType(sp.Type),
 		MaxSize:          sp.MaxSize,
-		Relay:            sp.Settings.Relay,
+		Relay:            policyRelay(ctx, sp),
 		ChunkConcurrency: sp.Settings.ChunkConcurrency,
 		Encryption:       sp.Settings.Encryption,
 	}
