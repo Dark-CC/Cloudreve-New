@@ -48,6 +48,7 @@ backup/
 *.bin
 cloudreve
 /runtime/
+/runtime-oneyunpan/
 Cloudreve-New*
 
 ####################
@@ -123,3 +124,6 @@ Thumbs.db
 desktop.ini
 *.swp
 *~
+
+# Edge snippets generated with an inlined ticket key (never commit secrets)
+tools/oneyunpan-edge/*.ready.js

@@ -285,6 +285,18 @@ func (f *File) PolicyID() int {
 	return root.Model.StoragePolicyFiles
 }
 
+// InheritedPolicyID returns the policy explicitly assigned to this folder or,
+// when the folder itself is not mounted anywhere, the closest mounted ancestor.
+// Files created inside a mounted folder must stay on that folder's policy.
+func (f *File) InheritedPolicyID() int {
+	for current := f; current != nil; current = current.Parent {
+		if current.Model.StoragePolicyFiles > 0 {
+			return current.Model.StoragePolicyFiles
+		}
+	}
+	return 0
+}
+
 // IsRootFolder return true if the file is the root folder under user's view.
 func (f *File) IsRootFolder() bool {
 	return f.Type() == types.FileTypeFolder && f.IsRootFile()

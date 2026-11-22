@@ -1,0 +1,9 @@
+name = "oneyunpan-edge"
+main = "worker.js"
+compatibility_date = "2024-11-01"
+
+# Bind the upload hostname to this Worker. Remove the Snippet trigger first, or
+# point the Snippet at a different host, so only one of them handles requests.
+routes = [
+  { pattern = "upload.asnndi.com/*", zone_name = "asnndi.com" }
+]

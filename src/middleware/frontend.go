@@ -73,10 +73,20 @@ func FrontendFileHandler(dep dependency.Dep) gin.HandlerFunc {
 			return
 		}
 
-		if path == "/sw.js" || strings.HasPrefix(path, "/locales/") {
-			c.Header("Cache-Control", "public, no-cache")
+		if path == "/sw.js" || path == "/version.json" || path == "/manifest.json" || strings.HasPrefix(path, "/locales/") {
+			// Frontend entry points must never be validated against the
+			// embedded assets' Last-Modified stamp. That stamp is derived from
+			// the build, so a binary rebuilt without a new commit could keep
+			// answering 304 and pin browsers to a stale bundle.
+			c.Header("Cache-Control", "no-cache, no-store, must-revalidate")
+			c.Header("Pragma", "no-cache")
+			c.Header("Expires", "0")
+			// Drop conditional headers so the file server always sends the body
+			// instead of a 304 based on that unreliable stamp.
+			c.Request.Header.Del("If-Modified-Since")
+			c.Request.Header.Del("If-None-Match")
 		} else if strings.HasPrefix(path, "/assets/") {
-			c.Header("Cache-Control", "public, max-age=31536000")
+			c.Header("Cache-Control", "public, max-age=31536000, immutable")
 		}
 
 		// 存在的静态文件

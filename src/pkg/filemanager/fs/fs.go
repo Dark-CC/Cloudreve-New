@@ -258,6 +258,8 @@ type (
 		MimeType        string                 `json:"mime_type,omitempty"`     // Expected mimetype
 		UploadPolicy    string                 `json:"upload_policy,omitempty"` // Upyun upload policy
 		EncryptMetadata *types.EncryptMetadata `json:"encrypt_metadata,omitempty"`
+		// EdgeTicket seals the upstream session for edge-executed uploads.
+		EdgeTicket string `json:"edge_ticket,omitempty"`
 	}
 
 	// UploadSession stores the information of an upload session, used in server side.

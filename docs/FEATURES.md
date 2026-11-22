@@ -36,6 +36,22 @@
 - `GET/PUT /api/v4/admin/group/:id/policies`
 - `GET /api/v4/user/setting/policies` 按组绑定返回可用策略
 - 存储策略支持负载均衡节点组
+- 上传遇到负载均衡策略时，前端先建会话，由服务端按权重选中目标策略，
+  再把任务交给对应驱动（`Uploader/core/uploader/loadBalance.ts`）
+
+## 1yunpan 存储策略
+
+- 策略类型 `oneyunpan`，管理端向导在「存储策略 → 新建 → 易云盘」，
+  列表与选择弹窗使用易云盘官方蓝 `#1D78ED` 的矢量图标
+- 策略里只需要填名称、1yunpan 账号和密码；API 地址、下载域名、上传节点由服务端固定，
+  保存时会强制覆盖，前端传入的值一律忽略
+- 上传/下载可走 Cloudflare Snippet 边缘直连，浏览器与边缘都不接触 1yunpan 账号：
+  服务端用 AES-256-GCM 把会话、目标路径、上传节点封成票据，边缘只持有票据密钥
+- 边缘上传地址、票据密钥、边缘站点标识属于站点级配置，在「管理端 → 设置 → 服务器
+  → 易云盘边缘上传」里统一设置一次，不再出现在每个存储策略中
+- 公共上传链接：`POST /api/v4/file/upload-link` 生成 `/#/upload/:token` 页面，
+  未登录访客可直接上传，支持有效期与单文件大小上限
+- 相关工具与部署说明见 `tools/oneyunpan-edge/`
 
 ## 工作流
 

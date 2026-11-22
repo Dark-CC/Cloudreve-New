@@ -20,6 +20,7 @@ import (
 	"github.com/cloudreve/Cloudreve/v4/pkg/filemanager/driver/ks3"
 	"github.com/cloudreve/Cloudreve/v4/pkg/filemanager/driver/obs"
 	"github.com/cloudreve/Cloudreve/v4/pkg/filemanager/driver/onedrive"
+	"github.com/cloudreve/Cloudreve/v4/pkg/filemanager/driver/oneyunpan"
 	"github.com/cloudreve/Cloudreve/v4/pkg/filemanager/driver/oss"
 	"github.com/cloudreve/Cloudreve/v4/pkg/filemanager/driver/s3"
 	"github.com/cloudreve/Cloudreve/v4/pkg/filemanager/manager"
@@ -105,6 +106,8 @@ func (service *SingleStoragePolicyService) Delete(c *gin.Context) error {
 	if err != nil {
 		return serializer.NewError(serializer.CodeDBError, "Failed to delete policy", err)
 	}
+
+	forgetOneyunpanClient(policy)
 
 	return nil
 }
@@ -324,6 +327,13 @@ func (service *SingleStoragePolicyService) Get(c *gin.Context) (*GetStoragePolic
 		return nil, serializer.NewError(serializer.CodeDBError, "Failed to get policy", err)
 	}
 
+	// The ent relation only mirrors groups.storage_policy_id, so a policy bound
+	// through the multi-policy group editor looks unbound on this page. Fill in
+	// the real bindings the same way the policy list does.
+	if err := enrichPolicyGroups(c, dep, []*ent.StoragePolicy{policy}); err != nil {
+		return nil, serializer.NewError(serializer.CodeDBError, "Failed to load policy groups", err)
+	}
+
 	res := &GetStoragePolicyResponse{StoragePolicy: policy}
 	if c.Query(countEntityQuery) != "" {
 		count, size, err := dep.FileClient().CountEntityByStoragePolicyID(ctx, service.ID)
@@ -352,6 +362,12 @@ func (service *CreateStoragePolicyService) Create(c *gin.Context) (*GetStoragePo
 		service.Policy.DirNameRule = util.DataPath("uploads/{uid}/{path}")
 	}
 
+	if service.Policy.Type == types.PolicyTypeOneyunpan {
+		if err := validateOneyunpanPolicy(c, service.Policy); err != nil {
+			return nil, err
+		}
+	}
+
 	service.Policy.ID = 0
 	policy, err := storagePolicyClient.Upsert(c, service.Policy)
 	if err != nil {
@@ -368,6 +384,95 @@ type (
 	UpdateStoragePolicyParamCtx struct{}
 )
 
+// validateOneyunpanPolicy pins the endpoints 1yunpan requires, verifies the
+// supplied account, and derives the upload mode from the site-wide edge
+// configuration. Operators cannot override these values from the policy form:
+// 1yunpan only has one public API/worker pair, and the edge ticket key belongs
+// to the deployment rather than to a single policy.
+func validateOneyunpanPolicy(c *gin.Context, policy *ent.StoragePolicy) error {
+	if policy.Settings == nil {
+		policy.Settings = &types.PolicySetting{}
+	}
+
+	dep := dependency.FromContext(c)
+	// Resolve the edge configuration before wiping the legacy per-policy copy,
+	// so an install that has not been seeded yet still saves successfully.
+	edge := oneyunpan.ResolveEdgeConfig(c, dep.SettingProvider(), policy)
+
+	policy.Server = oneyunpan.DefaultAPIEndpoint
+	policy.Settings.OneyunpanDownloadEndpoint = oneyunpan.DefaultDownloadEndpoint
+	policy.Settings.OneyunpanUploadEndpoint = oneyunpan.DefaultUploadEndpoint
+	// The edge settings are site-wide now; keep the policy copy empty so the
+	// ticket key never gets duplicated across policies.
+	policy.Settings.OneyunpanEdgeEndpoint = ""
+	policy.Settings.OneyunpanTicketKey = ""
+	policy.Settings.OneyunpanEdgeSite = ""
+
+	if !edge.Enabled() {
+		// Without an edge endpoint the driver can only stream through this node.
+		policy.Settings.Relay = true
+	} else {
+		policy.Settings.Relay = false
+		if _, err := oneyunpan.DecodeTicketKey(edge.TicketKey); err != nil {
+			return serializer.NewError(serializer.CodeParamErr, "1yunpan edge upload requires a 32-byte ticket key (base64)", err)
+		}
+		if !isAllowedEdgeEndpoint(edge.Endpoint) {
+			return serializer.NewError(serializer.CodeParamErr, "1yunpan edge endpoint must be an https URL (http is only allowed for localhost)", nil)
+		}
+		if strings.Contains(edge.Site, ".") {
+			return serializer.NewError(serializer.CodeParamErr, "1yunpan edge site id must not contain a dot", nil)
+		}
+	}
+	if policy.Settings.ChunkSize <= 0 {
+		policy.Settings.ChunkSize = 25 << 20
+	}
+
+	client, err := oneyunpan.NewClient(
+		policy.Server,
+		policy.Settings.OneyunpanDownloadEndpoint,
+		policy.AccessKey,
+		policy.SecretKey,
+	)
+	if err != nil {
+		return serializer.NewError(serializer.CodeParamErr, err.Error(), err)
+	}
+
+	if _, err := client.List(c, ""); err != nil {
+		return serializer.NewError(serializer.CodeParamErr, "Failed to authenticate with 1yunpan: "+err.Error(), err)
+	}
+	return nil
+}
+
+// isAllowedEdgeEndpoint requires https everywhere except local development,
+// where the edge may be served over plain http on the loopback interface.
+func isAllowedEdgeEndpoint(raw string) bool {
+	endpoint := strings.TrimSpace(raw)
+	if strings.HasPrefix(endpoint, "https://") {
+		return true
+	}
+
+	u, err := url.Parse(endpoint)
+	if err != nil || u.Scheme != "http" {
+		return false
+	}
+	host := u.Hostname()
+	return host == "localhost" || host == "127.0.0.1" || host == "::1"
+}
+
+// forgetOneyunpanClient drops the cached 1yunpan login for a policy's previous
+// credential set so rotated passwords or endpoints are used right away.
+func forgetOneyunpanClient(policy *ent.StoragePolicy) {
+	if policy == nil || policy.Type != types.PolicyTypeOneyunpan {
+		return
+	}
+
+	downloadHost := ""
+	if policy.Settings != nil {
+		downloadHost = policy.Settings.OneyunpanDownloadEndpoint
+	}
+	oneyunpan.ForgetCredentials(policy.Server, downloadHost, policy.AccessKey, policy.SecretKey)
+}
+
 func (service *UpdateStoragePolicyService) Update(c *gin.Context) (*GetStoragePolicyResponse, error) {
 	dep := dependency.FromContext(c)
 	storagePolicyClient := dep.StoragePolicyClient()
@@ -382,6 +487,18 @@ func (service *UpdateStoragePolicyService) Update(c *gin.Context) (*GetStoragePo
 	}
 
 	service.Policy.ID = idInt
+
+	if service.Policy.Type == types.PolicyTypeOneyunpan {
+		if err := validateOneyunpanPolicy(c, service.Policy); err != nil {
+			return nil, err
+		}
+	}
+
+	if previous, err := storagePolicyClient.GetPolicyByID(c, idInt); err == nil && previous.Type == types.PolicyTypeOneyunpan {
+		// Credentials may be rotated; drop the old cached login so the change
+		// takes effect immediately.
+		forgetOneyunpanClient(previous)
+	}
 
 	sc, tx, ctx, err := inventory.WithTx(c, storagePolicyClient)
 	if err != nil {

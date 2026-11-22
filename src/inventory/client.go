@@ -86,6 +86,10 @@ func InitializeDBClient(l logging.Logger,
 		return nil, err
 	}
 
+	if err := EnsureOneyunpanEdgeSettings(ctx, client, kv, l); err != nil {
+		return nil, err
+	}
+
 	//createMockData(client, ctx)
 	return client, nil
 }

@@ -208,23 +208,38 @@ func Eject(l logging.Logger, statics fs.FS) error {
 	return nil
 }
 
+// getBuildTime decides the Last-Modified stamp of the embedded frontend.
+//
+// It used to return the git commit time only. Release binaries are built from a
+// clean tree, so that stamp tracked the shipped assets, but any binary rebuilt
+// while the tree still had uncommitted changes kept the old commit time. The
+// assets inside it changed while their stamp did not, so every conditional
+// request for /sw.js and /index.html was answered with 304 and browsers stayed
+// pinned to a stale frontend forever. Use whichever is newer: the source commit
+// time or the executable's own modification time.
 func getBuildTime() (buildTime time.Time) {
-	buildTime = time.Now()
 	exe, err := os.Executable()
 	if err != nil {
-		return
+		return time.Now()
 	}
-	info, err := buildinfo.ReadFile(exe)
-	if err != nil {
-		return
-	}
-	for _, s := range info.Settings {
-		if s.Key == "vcs.time" && s.Value != "" {
-			if t, err := time.Parse(time.RFC3339, s.Value); err == nil {
-				buildTime = t
+
+	if info, infoErr := buildinfo.ReadFile(exe); infoErr == nil {
+		for _, s := range info.Settings {
+			if s.Key == "vcs.time" && s.Value != "" {
+				if t, parseErr := time.Parse(time.RFC3339, s.Value); parseErr == nil {
+					buildTime = t
+				}
+				break
 			}
-			break
 		}
+	}
+
+	if st, statErr := os.Stat(exe); statErr == nil && st.ModTime().After(buildTime) {
+		buildTime = st.ModTime()
+	}
+
+	if buildTime.IsZero() {
+		buildTime = time.Now()
 	}
 	return
 }

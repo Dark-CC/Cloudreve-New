@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"fmt"
+	"net/http"
 	"github.com/cloudreve/Cloudreve/v4/pkg/filemanager/driver/upyun"
 	"github.com/cloudreve/Cloudreve/v4/pkg/filemanager/fs"
 	"github.com/cloudreve/Cloudreve/v4/pkg/filemanager/manager"
@@ -12,6 +13,22 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/qiniu/go-sdk/v7/auth/qbox"
 )
+
+// RefreshEdgeTicket re-issues a sealed 1yunpan edge ticket for an in-flight
+// upload. The edge calls this when the session embedded in its ticket has
+// expired, which is what lets multi-hour uploads complete without operator
+// intervention.
+func RefreshEdgeTicket(c *gin.Context) {
+	session := c.MustGet(manager.UploadSessionCtx).(*fs.UploadSession)
+	ticket, err := callback.RefreshEdgeTicket(c, session)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, serializer.Err(c, err))
+		c.Abort()
+		return
+	}
+
+	c.JSON(200, serializer.Response{Data: gin.H{"edge_ticket": ticket}})
+}
 
 // RemoteCallback process callback request to complete upload
 func ProcessCallback(failedStatusCode int, generalResp bool) gin.HandlerFunc {

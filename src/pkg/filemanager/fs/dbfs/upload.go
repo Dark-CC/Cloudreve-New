@@ -127,7 +127,10 @@ func (f *DBFS) PrepareUpload(ctx context.Context, req *fs.UploadRequest, opts ..
 		policy *ent.StoragePolicy
 	)
 	if req.ImportFrom == nil {
-		policy, err = f.getPreferredPolicy(ctx, ancestor)
+		// The client always sends the policy chosen in the UI. Honor it when it
+		// is still bound to the owner's group, otherwise fall back to the
+		// group's configured policy.
+		policy, err = f.getPreferredPolicyByID(ctx, ancestor, req.Props.PreferredStoragePolicy)
 	} else {
 		policy, err = f.storagePolicyClient.GetPolicyByID(ctx, req.Props.PreferredStoragePolicy)
 	}

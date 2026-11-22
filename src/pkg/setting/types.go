@@ -1,6 +1,7 @@
 package setting
 
 import (
+	"strings"
 	"time"
 )
 
@@ -140,6 +141,20 @@ type DBFS struct {
 	MaxPageSize                int
 	MaxRecursiveSearchedFolder int
 	UseSSEForSearch            bool
+}
+
+// OneyunpanEdge is the deployment-wide 1yunpan edge upload configuration. It
+// lives at site level so operators configure the shared edge once instead of
+// repeating the ticket key on every 1yunpan storage policy.
+type OneyunpanEdge struct {
+	Endpoint  string
+	TicketKey string
+	Site      string
+}
+
+// Enabled reports whether browser uploads should be handed to the edge.
+func (o *OneyunpanEdge) Enabled() bool {
+	return o != nil && strings.TrimSpace(o.Endpoint) != ""
 }
 
 type (

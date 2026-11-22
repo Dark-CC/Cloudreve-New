@@ -22,6 +22,7 @@ import (
 	"github.com/cloudreve/Cloudreve/v4/service/oauth"
 	"github.com/cloudreve/Cloudreve/v4/service/setting"
 	sharesvc "github.com/cloudreve/Cloudreve/v4/service/share"
+	"github.com/cloudreve/Cloudreve/v4/service/uploadlink"
 	ssosvc "github.com/cloudreve/Cloudreve/v4/service/sso"
 	usersvc "github.com/cloudreve/Cloudreve/v4/service/user"
 	vasvc "github.com/cloudreve/Cloudreve/v4/service/vas"
@@ -224,6 +225,27 @@ func initMasterRouter(dep dependency.Dep) *gin.Engine {
 		wopi.POST(":id/contents", controllers.PutFile)
 		// 通用文件操作
 		wopi.POST(":id", controllers.ModifyFile)
+	}
+
+	// Public upload links. These routes must stay outside the login-required
+	// group because visitors have no account; the sealed token is the grant.
+	uploadLink := noAuth.Group("upload-link")
+	{
+		uploadLink.GET(":token",
+			controllers.FromUri[uploadlink.InfoService](uploadlink.InfoParamCtx{}),
+			controllers.UploadLinkInfo,
+		)
+		uploadLink.POST(":token/session",
+			controllers.CreateUploadLinkSession,
+		)
+		uploadLink.POST(":token/complete/:session/:secret",
+			controllers.FromUri[uploadlink.CompleteService](uploadlink.CompleteParamCtx{}),
+			controllers.CompleteUploadLinkUpload,
+		)
+		uploadLink.POST(":token/refresh/:session/:secret",
+			controllers.FromUri[uploadlink.RefreshService](uploadlink.RefreshParamCtx{}),
+			controllers.RefreshUploadLinkTicket,
+		)
 	}
 
 	v4 := r.Group(constants.APIPrefix)
@@ -613,6 +635,22 @@ func initMasterRouter(dep dependency.Dep) *gin.Engine {
 				controllers.QiniuCallbackValidate,
 				controllers.ProcessCallback(http.StatusBadRequest, true),
 			)
+			// 1yunpan edge callback. The edge finishes the object upstream and
+			// then reports back here; the callback secret proves it may complete
+			// the upload session.
+			callback.POST(
+				"oneyunpan/:sessionID/:key",
+				middleware.UseUploadSession(types.PolicyTypeOneyunpan),
+				controllers.ProcessCallback(http.StatusBadRequest, false),
+			)
+			// 1yunpan edge session refresh. The edge calls this when the sealed
+			// session it holds is rejected upstream, so long uploads self-heal
+			// without ever storing an account credential at the edge.
+			callback.POST(
+				"oneyunpan/:sessionID/:key/refresh",
+				middleware.UseUploadSession(types.PolicyTypeOneyunpan),
+				controllers.RefreshEdgeTicket,
+			)
 			// Pro-compatible OpenID provider callback. Pro's OIDC provider id
 			// is 2; the legacy `/session/sso/oidc/callback` route remains.
 			callback.GET(
@@ -815,6 +853,12 @@ func initMasterRouter(dep dependency.Dep) *gin.Engine {
 					controllers.DeleteUploadSession,
 				)
 			}
+			// Public upload links (owner side)
+			file.POST("upload-link",
+				middleware.RequiredScopes(types.ScopeFilesWrite),
+				controllers.FromJSON[uploadlink.CreateService](uploadlink.CreateParamCtx{}),
+				controllers.CreateUploadLink,
+			)
 			// Pin file
 			pin := file.Group("pin", middleware.RequiredScopes(types.ScopeFilesWrite))
 			{

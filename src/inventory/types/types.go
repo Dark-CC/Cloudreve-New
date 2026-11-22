@@ -111,6 +111,17 @@ type (
 		QiniuUploadCdn bool `json:"qiniu_upload_cdn,omitempty"`
 		// ChunkConcurrency the number of chunks to upload concurrently.
 		ChunkConcurrency int `json:"chunk_concurrency,omitempty"`
+		// OneyunpanDownloadEndpoint is the download host used by the 1yunpan driver.
+		OneyunpanDownloadEndpoint string `json:"oneyunpan_download_endpoint,omitempty"`
+		// OneyunpanUploadEndpoint is the worker host used by the 1yunpan driver.
+		OneyunpanUploadEndpoint string `json:"oneyunpan_upload_endpoint,omitempty"`
+		// OneyunpanEdgeEndpoint is the public edge upload address handed to browsers.
+		// When set, uploads are streamed by the edge instead of this node.
+		OneyunpanEdgeEndpoint string `json:"oneyunpan_edge_endpoint,omitempty"`
+		// OneyunpanTicketKey is the AES-256 key (base64) used to seal edge tickets.
+		OneyunpanTicketKey string `json:"oneyunpan_ticket_key,omitempty"`
+		// OneyunpanEdgeSite names this deployment in the shared edge's key map.
+		OneyunpanEdgeSite string `json:"oneyunpan_edge_site,omitempty"`
 		// Whether to enable file encryption.
 		Encryption bool `json:"encryption,omitempty"`
 	}
@@ -318,6 +329,8 @@ const (
 	PolicyTypeOd     = "onedrive"
 	PolicyTypeRemote = "remote"
 	PolicyTypeObs    = "obs"
+	// PolicyTypeOneyunpan stores files in 1yunpan via its private HTTP API.
+	PolicyTypeOneyunpan = "oneyunpan"
 	// PolicyTypeLoadBalance distributes new uploads across weighted policies.
 	PolicyTypeLoadBalance = "load_balance"
 )

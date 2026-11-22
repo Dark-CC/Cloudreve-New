@@ -86,6 +86,8 @@ type (
 		HashIDSalt(ctx context.Context) string
 		// DBFS returns the DBFS related settings.
 		DBFS(ctx context.Context) *DBFS
+		// OneyunpanEdge returns the deployment-wide 1yunpan edge upload settings.
+		OneyunpanEdge(ctx context.Context) *OneyunpanEdge
 		// MaxBatchedFile returns the maximum number of files in a batch operation.
 		MaxBatchedFile(ctx context.Context) int
 		// UploadSessionTTL returns the TTL of upload session.
@@ -776,6 +778,14 @@ func (s *settingProvider) DBFS(ctx context.Context) *DBFS {
 		MaxPageSize:                s.getInt(ctx, "max_page_size", 2000),
 		MaxRecursiveSearchedFolder: s.getInt(ctx, "max_recursive_searched_folder", 65535),
 		UseSSEForSearch:            s.getBoolean(ctx, "use_sse_for_search", false),
+	}
+}
+
+func (s *settingProvider) OneyunpanEdge(ctx context.Context) *OneyunpanEdge {
+	return &OneyunpanEdge{
+		Endpoint:  strings.TrimSpace(s.getString(ctx, "oneyunpan_edge_endpoint", "")),
+		TicketKey: strings.TrimSpace(s.getString(ctx, "oneyunpan_edge_ticket_key", "")),
+		Site:      strings.TrimSpace(s.getString(ctx, "oneyunpan_edge_site", "")),
 	}
 }
 

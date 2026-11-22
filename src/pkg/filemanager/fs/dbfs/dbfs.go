@@ -726,29 +726,26 @@ func (f *DBFS) getPreferredPolicy(ctx context.Context, file *File) (*ent.Storage
 		return nil, fmt.Errorf("owner group not loaded")
 	}
 
-	// Pro allows binding multiple storage policies to one group. When any
-	// binding exists we pick one at random for each new entity.
-	if f.groupPolicyClient != nil {
-		// The preferred policy may be resolved while a file DB transaction is
-		// already open. Reuse that transaction so SQLite does not wait for the
-		// writer lock on a second connection.
-		policyClient, _ := inventory.InheritTx(ctx, f.groupPolicyClient)
-		if policyIDs, err := policyClient.ListGroupPolicies(ctx, ownerGroup.ID); err == nil && len(policyIDs) > 0 {
-			candidates := make([]*ent.StoragePolicy, 0, len(policyIDs))
-			for _, policyID := range policyIDs {
-				policy, err := f.storagePolicyClient.GetPolicyByID(ctx, policyID)
-				if err != nil {
-					continue
-				}
-				candidates = append(candidates, policy)
-			}
-
-			if len(candidates) > 0 {
-				return f.resolvePolicy(ctx, candidates[rand.IntN(len(candidates))], 0)
+	// A folder with an explicitly assigned policy pins every new entity under
+	// it to that policy, and nested folders inherit it until one of them is
+	// switched explicitly. This is what the uploader's "mount policy" selector
+	// relies on: after the user switches a folder, uploads must not be spread
+	// over the other policies bound to the group.
+	if policyID := file.InheritedPolicyID(); policyID > 0 {
+		// Ignore a stale mount left behind after the policy was unbound from
+		// the group, so uploads never target a policy the user cannot use.
+		if f.isPolicyAllowedForGroup(ctx, ownerGroup, policyID) {
+			storagePolicyClient, _ := inventory.InheritTx(ctx, f.storagePolicyClient)
+			if policy, err := storagePolicyClient.GetPolicyByID(ctx, policyID); err == nil {
+				return f.resolvePolicy(ctx, policy, 0)
 			}
 		}
 	}
 
+	// Otherwise fall back to the group's default policy. This must stay
+	// deterministic: the resolved policy is also what the file list reports to
+	// the client, so a random pick made the reported policy and the folder's
+	// actual policy drift apart on every refresh.
 	sc, _ := inventory.InheritTx(ctx, f.storagePolicyClient)
 	groupPolicy, err := sc.GetByGroup(ctx, ownerGroup)
 	if err != nil {
@@ -756,6 +753,110 @@ func (f *DBFS) getPreferredPolicy(ctx context.Context, file *File) (*ent.Storage
 	}
 
 	return f.resolvePolicy(ctx, groupPolicy, 0)
+}
+
+// getPreferredPolicyByID honors the storage policy explicitly chosen by the
+// client, as long as it is still available to the owner's group. A stale or
+// forged id falls back to the group's normal policy resolution so uploads never
+// silently land outside the caller's allowed policies.
+func (f *DBFS) getPreferredPolicyByID(ctx context.Context, file *File, policyID int) (*ent.StoragePolicy, error) {
+	if policyID <= 0 {
+		return f.getPreferredPolicy(ctx, file)
+	}
+
+	ownerGroup := file.Owner().Edges.Group
+	if ownerGroup == nil {
+		return nil, fmt.Errorf("owner group not loaded")
+	}
+
+	allowed := f.isPolicyAllowedForGroup(ctx, ownerGroup, policyID)
+	if !allowed {
+		// Fail loudly instead of silently switching storage: the client asked
+		// for a specific policy, and uploading elsewhere would be a surprise.
+		f.l.Warning("Requested storage policy %d is not available to group %d", policyID, ownerGroup.ID)
+		return nil, serializer.NewError(serializer.CodeParamErr, "Storage policy is not available to your group", nil)
+	}
+
+	storagePolicyClient, _ := inventory.InheritTx(ctx, f.storagePolicyClient)
+	policy, err := storagePolicyClient.GetPolicyByID(ctx, policyID)
+	if err != nil {
+		return nil, serializer.NewError(serializer.CodeDBError, "Failed to get selected storage policy", err)
+	}
+
+	return f.resolvePolicy(ctx, policy, 0)
+}
+
+// isPolicyAllowedForGroup reports whether the given policy may be used by the
+// group. Directly bound policies are allowed, and so are the weighted targets
+// of a bound load balance policy: the file list reports the already-resolved
+// target to the client, which then sends that target back when uploading.
+func (f *DBFS) isPolicyAllowedForGroup(ctx context.Context, group *ent.Group, policyID int) bool {
+	if groupStoragePolicyID(group) == policyID {
+		return true
+	}
+	if f.groupPolicyClient == nil {
+		return false
+	}
+
+	policyClient, _ := inventory.InheritTx(ctx, f.groupPolicyClient)
+	policyIDs, err := policyClient.ListGroupPolicies(ctx, group.ID)
+	if err != nil {
+		return false
+	}
+
+	for _, id := range policyIDs {
+		if id == policyID {
+			return true
+		}
+		if f.isLoadBalanceTarget(ctx, policyClient, id, policyID, 0) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// isLoadBalanceTarget walks a load balance policy's targets (nested load
+// balance policies included) looking for the requested policy.
+func (f *DBFS) isLoadBalanceTarget(ctx context.Context, policyClient inventory.GroupPolicyClient, policyID, targetID, depth int) bool {
+	if depth >= 3 {
+		return false
+	}
+
+	// Reuse the caller's transaction; a second connection would block on the
+	// SQLite writer lock when this runs inside an upload transaction.
+	storagePolicyClient, _ := inventory.InheritTx(ctx, f.storagePolicyClient)
+	policy, err := storagePolicyClient.GetPolicyByID(ctx, policyID)
+	if err != nil || policy.Type != types.PolicyTypeLoadBalance {
+		return false
+	}
+
+	targets, err := policyClient.ListLoadBalanceTargets(ctx, policyID)
+	if err != nil {
+		return false
+	}
+
+	for _, target := range targets {
+		if target.TargetPolicyID == targetID {
+			return true
+		}
+		if f.isLoadBalanceTarget(ctx, policyClient, target.TargetPolicyID, targetID, depth+1) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// groupStoragePolicyID returns the legacy single policy column of a group.
+func groupStoragePolicyID(group *ent.Group) int {
+	if group == nil {
+		return 0
+	}
+	if group.Edges.StoragePolicies != nil && group.Edges.StoragePolicies.ID > 0 {
+		return group.Edges.StoragePolicies.ID
+	}
+	return group.StoragePolicyID
 }
 
 // resolvePolicy follows a load balance policy to one of its weighted targets.
@@ -872,8 +973,8 @@ func (f *DBFS) createDefaultShareShortcuts(ctx context.Context, root *ent.File) 
 		name := share.Edges.File.Name
 		fileType := types.FileType(share.Edges.File.Type)
 		_, _, _, err = f.fileClient.CreateFile(ctx, root, &inventory.CreateFileParameters{
-			FileType: fileType,
-			Name:     name,
+			FileType:   fileType,
+			Name:       name,
 			IsSymbolic: true,
 			Metadata: map[string]string{
 				MetadataSharedRedirect: fs.NewShareUri(hashid.EncodeShareID(f.hasher, share.ID), ""),
