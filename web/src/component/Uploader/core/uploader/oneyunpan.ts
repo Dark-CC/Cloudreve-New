@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios, { AxiosResponse } from "axios";
 import { UploadCredential } from "../../../../api/explorer";
 import { removeResumeCtx } from "../utils/helper";
 import { requestAPI } from "../utils/request";
@@ -18,8 +18,18 @@ interface RefreshTicketResponse {
 const FIRST_PART_SIZE = 1;
 const MAX_REFRESH_ATTEMPTS = 3;
 const CALLBACK_RETRIES = 4;
+const MAX_PART_ATTEMPTS = 3;
+const MAX_CHAIN_RESTARTS = 2;
 
 class SessionExpiredError extends Error {}
+
+/**
+ * The chain token can only move forward, so a part whose response is lost
+ * leaves us without the token the upstream expects next. Replaying with the
+ * stale token is rejected upstream, and there is no way to resume, so the only
+ * safe recovery is to start a brand new chain from byte zero.
+ */
+class ChainRestartError extends Error {}
 
 /**
  * Browser-side uploader for the 1yunpan edge route.
@@ -48,17 +58,38 @@ export default class Oneyunpan extends Chunk {
     removeResumeCtx(this.task, this.logger);
 
     let refreshes = 0;
+    let restarts = 0;
     for (;;) {
       try {
         await this.streamFile();
         return;
       } catch (e) {
-        if (!(e instanceof SessionExpiredError) || refreshes >= MAX_REFRESH_ATTEMPTS) {
-          throw e;
+        if (e instanceof SessionExpiredError) {
+          if (refreshes >= MAX_REFRESH_ATTEMPTS) {
+            throw e;
+          }
+          refreshes++;
+          this.logger.warn(`1yunpan session expired, refreshing edge ticket (${refreshes}/${MAX_REFRESH_ATTEMPTS})`);
+          await this.refreshTicket();
+          continue;
         }
-        refreshes++;
-        this.logger.warn(`1yunpan session expired, refreshing edge ticket (${refreshes}/${MAX_REFRESH_ATTEMPTS})`);
-        await this.refreshTicket();
+
+        if (e instanceof ChainRestartError) {
+          if (restarts >= MAX_CHAIN_RESTARTS) {
+            throw e;
+          }
+          restarts++;
+          this.logger.warn(
+            `1yunpan chunk chain was interrupted, restarting from the first byte (${restarts}/${MAX_CHAIN_RESTARTS})`,
+          );
+          // Restarting with the same ticket replays the chain inside the same
+          // upstream session, which the edge accepts (the first part reopens
+          // the chain). Asking for a new ticket would instead leave the
+          // abandoned partial object behind upstream.
+          continue;
+        }
+
+        throw e;
       }
     }
   };
@@ -77,7 +108,18 @@ export default class Oneyunpan extends Chunk {
       throw new Error("1yunpan requires files to be at least 2 bytes");
     }
 
-    const chunkSize = Math.max(1, this.task.session?.chunk_size || total);
+    // Every part is a separate request that can only be sent after the
+    // previous one returned its chain token, so the part count directly
+    // multiplies the odds of hitting a transient edge reset. Large files use
+    // the biggest part the edge accepts to keep that count (and the total
+    // time) down; small files are unaffected because the last part is
+    // clamped to the remaining bytes.
+    const totalMiB = total / (1024 * 1024);
+    const preferred = totalMiB >= 512 ? 64 : totalMiB >= 128 ? 32 : 16;
+    const requested = Math.floor((this.task.session?.chunk_size || 0) / (1024 * 1024));
+    const chunkMiB = Math.max(preferred, Math.min(88, requested));
+    const chunkSize = Math.max(1, Math.min(total, chunkMiB * 1024 * 1024));
+
     const plan: number[] = [FIRST_PART_SIZE];
     let remaining = total - FIRST_PART_SIZE;
     while (remaining > 0) {
@@ -140,37 +182,85 @@ export default class Oneyunpan extends Chunk {
       throw new Error("1yunpan edge upload session is missing its ticket");
     }
 
-    const headers: Record<string, string> = {
-      "content-type": "application/octet-stream",
-      "content-range": `${start}-${end - 1}`,
-      "x-cr-ticket": ticket,
-    };
-    if (this.nextToken) {
-      headers["x-next-token"] = this.nextToken;
+    const chainToken = this.nextToken;
+    let res: AxiosResponse<OneyunpanChunkResponse> | undefined;
+
+    for (let attempt = 1; ; attempt++) {
+      const headers: Record<string, string> = {
+        "content-type": "application/octet-stream",
+        "content-range": `${start}-${end - 1}`,
+        "x-cr-ticket": ticket,
+      };
+      if (chainToken) {
+        headers["x-next-token"] = chainToken;
+      }
+
+      try {
+        res = await axios.request<OneyunpanChunkResponse>({
+          url: edge,
+          method: "post",
+          headers,
+          data: blob,
+          onUploadProgress: (e) => {
+            const loaded = Math.min(e.loaded, blob.size);
+            this.task.chunkProgress[index].loaded = loaded;
+            this.publishProgress(start + loaded);
+          },
+          // `cancelToken.token` is an axios CancelToken, not an AbortSignal.
+          // Passing it as `signal` made axios call `addEventListener` on it.
+          cancelToken: this.cancelToken.token,
+          validateStatus: () => true,
+        });
+      } catch (e: any) {
+        if (this.cancelToken.token.reason) {
+          throw e;
+        }
+        // No response at all: the edge or Cloudflare dropped the connection.
+        // A dropped part leaves the chain where it was, so replaying the same
+        // bytes with the same token is safe (verified against the real edge).
+        if (attempt >= MAX_PART_ATTEMPTS) {
+          throw new ChainRestartError(`1yunpan edge dropped the connection: ${e?.message ?? e}`);
+        }
+        this.logger.warn(
+          `1yunpan part ${index} lost its connection, retrying (${attempt}/${MAX_PART_ATTEMPTS})`,
+          e?.message,
+        );
+        await new Promise((resolve) => setTimeout(resolve, 800 * attempt));
+        continue;
+      }
+
+      if (res.status === 401 || res.status === 403 || res.headers?.["x-cr-session-expired"] === "1") {
+        throw new SessionExpiredError("1yunpan session expired");
+      }
+
+      if (res.status >= 500) {
+        // A 5xx is an upstream hiccup on a part that has not been consumed;
+        // the chain is still positioned here, so the same request can simply
+        // be replayed. Only give up and restart the whole chain once the
+        // retries are exhausted, because a fresh chain is expensive.
+        if (attempt < MAX_PART_ATTEMPTS) {
+          this.logger.warn(
+            `1yunpan part ${index} got a transient upstream error, retrying (${attempt}/${MAX_PART_ATTEMPTS})`,
+            res.status,
+          );
+          await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
+          continue;
+        }
+        throw new ChainRestartError(`1yunpan upstream kept failing this part (status ${res.status})`);
+      }
+
+      if (res.status < 200 || res.status >= 300) {
+        const message = typeof res.data === "string" ? res.data : res.data?.message;
+        // 4xx means the edge refused the chain itself (expired/rotated token,
+        // ticket mismatch). Nothing can be resumed from here.
+        throw new ChainRestartError(message || `1yunpan edge rejected the chain (status ${res.status})`);
+      }
+
+      break;
     }
 
-    const res = await axios.request<OneyunpanChunkResponse>({
-      url: edge,
-      method: "post",
-      headers,
-      data: blob,
-      onUploadProgress: (e) => {
-        const loaded = Math.min(e.loaded, blob.size);
-        this.task.chunkProgress[index].loaded = loaded;
-        this.publishProgress(start + loaded);
-      },
-      // `cancelToken.token` is an axios CancelToken, not an AbortSignal.
-      // Passing it as `signal` made axios call `addEventListener` on it.
-      cancelToken: this.cancelToken.token,
-      validateStatus: () => true,
-    });
-
-    if (res.status === 401 || res.status === 403 || res.headers?.["x-cr-session-expired"] === "1") {
-      throw new SessionExpiredError("1yunpan session expired");
-    }
-    if (res.status < 200 || res.status >= 300) {
-      const message = typeof res.data === "string" ? res.data : res.data?.message;
-      throw new Error(message || `1yunpan edge upload failed (status ${res.status})`);
+    if (!res) {
+      throw new ChainRestartError("1yunpan edge returned no response");
     }
     if (res.data?.status === false) {
       throw new Error(res.data?.message || "1yunpan edge upload failed");

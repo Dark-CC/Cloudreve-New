@@ -364,12 +364,19 @@ func (d *Driver) CompleteUpload(ctx context.Context, session *fs.UploadSession) 
 	name := path.Base(target)
 
 	var lastErr error
-	for attempt := 0; attempt < 5; attempt++ {
+	// A multi-gigabyte object can take a while to appear in the upstream
+	// listing after the final part, so the window has to scale with the file
+	// rather than stay at a few seconds that only suit small uploads.
+	attempts := 10
+	if session.Props.Size > 256<<20 {
+		attempts = 20
+	}
+	for attempt := 0; attempt < attempts; attempt++ {
 		if attempt > 0 {
 			select {
 			case <-ctx.Done():
 				return ctx.Err()
-			case <-time.After(time.Duration(attempt) * time.Second):
+			case <-time.After(time.Duration(min(5, attempt)) * time.Second):
 			}
 		}
 

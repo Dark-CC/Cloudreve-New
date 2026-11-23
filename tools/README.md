@@ -52,7 +52,7 @@
 所有编译都在 GitHub Actions 上完成，本地只负责提交与打 tag：
 
 ```bash
-git tag v4.19.4 && git push origin v4.19.4
+git tag v4.19.5 && git push origin v4.19.5
 ```
 
 `release.yml` 会构建前端、调用 goreleaser 生成全部平台产物，
